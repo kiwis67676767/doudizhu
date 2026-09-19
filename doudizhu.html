@@ -1356,6 +1356,7 @@ function toggleCard(id){
 /* ---------------- dealing & auction ---------------- */
 function newRound(){
   G.epoch++;
+  hideHome();                                /* a hand is starting: the menu is gone */
   if (G.mode === "host") advertise(false);   /* no walk-ins once a hand is running */
   musicSet("play");
   boardSig = handSig = null;                 /* force a clean redraw for the new hand */                       /* retire every timer still in flight from the last hand */
@@ -3517,7 +3518,12 @@ function showHome(){
   $("#home").classList.remove("hidden");
   musicSet("menu");
 }
-function hideHome(){ $("#home").classList.add("hidden"); }
+function hideHome(){
+  /* Leaving the menu on purpose. Closing a dialog afterwards must not summon it
+     back — that is what put the dealer on the home screen mid-deal. */
+  homeWasOpen = false;
+  $("#home").classList.add("hidden");
+}
 function startVsAi(){
   hideHome();
   netLeave();                       /* a stale table must not reach into a solo game */
