@@ -462,6 +462,7 @@ en:{
   backMenu:"Back to menu",
   srvT:"Playing with friends needs the table server",
   srvSub:"This page is open straight from a file, so there is no address to share.",
+  srvSubHosted:"This copy is hosted as a static site, so the table server is not running here.",
   srvB1:"In a terminal, from the folder holding this game:",
   srvB2:"It prints an address such as <code>http://192.168.1.20:8080</code>. Open that, choose <b>Play with friends</b>, and you will get a link to send round. Anyone who can reach your machine can join — the same wifi is usually enough. Over the internet, put a tunnel in front of the port.",
   gotIt:"Got it"
@@ -536,6 +537,7 @@ zh:{
   backMenu:"返回主页",
   srvT:"和朋友玩需要启动服务器",
   srvSub:"这个页面是直接从文件打开的，没有可以分享的网址。",
+  srvSubHosted:"这是静态托管的版本，牌桌服务器没有在这里运行。",
   srvB1:"在终端里，进入游戏所在的文件夹运行：",
   srvB2:"它会显示一个地址，例如 <code>http://192.168.1.20:8080</code>。打开它，选择<b>和朋友玩</b>，就会得到可以分享的链接。能连到你这台电脑的人都可以加入 — 同一个 wifi 通常就够了。要跨网络玩，请在该端口前加一层内网穿透。",
   gotIt:"知道了"
@@ -610,6 +612,7 @@ es:{
   backMenu:"Volver al menú",
   srvT:"Jugar con amigos necesita el servidor de mesa",
   srvSub:"Esta página está abierta directamente desde un archivo, así que no hay dirección que compartir.",
+  srvSubHosted:"Esta copia está alojada como sitio estático, así que el servidor de mesa no se ejecuta aquí.",
   srvB1:"En una terminal, desde la carpeta que contiene el juego:",
   srvB2:"Mostrará una dirección como <code>http://192.168.1.20:8080</code>. Ábrela, elige <b>Jugar con amigos</b> y obtendrás un enlace para compartir. Puede entrar cualquiera que alcance tu equipo — con el mismo wifi suele bastar. Por internet, pon un túnel delante del puerto.",
   gotIt:"Entendido"
@@ -684,6 +687,7 @@ zhT:{
   backMenu:"返回主頁",
   srvT:"和朋友玩需要啟動伺服器",
   srvSub:"這個頁面是直接從檔案開啟的，沒有可以分享的網址。",
+  srvSubHosted:"這是靜態託管的版本，牌桌伺服器沒有在這裡執行。",
   srvB1:"在終端機裡，進入遊戲所在的資料夾執行：",
   srvB2:"它會顯示一個位址，例如 <code>http://192.168.1.20:8080</code>。開啟它，選擇<b>和朋友玩</b>，就會得到可以分享的連結。能連到你這台電腦的人都可以加入 — 同一個 wifi 通常就夠了。要跨網路玩，請在該連接埠前加一層內網穿透。",
   gotIt:"知道了"
@@ -2158,7 +2162,7 @@ function showNotice(title, body){
 function showServerHelp(){
   showModal(
     "<h2>" + t("srvT") + "</h2>" +
-    '<div class="sub">' + t("srvSub") + "</div>" +
+    '<div class="sub">' + (location.protocol === "file:" ? t("srvSub") : t("srvSubHosted")) + "</div>" +
     "<p>" + t("srvB1") + "</p>" +
     "<p><code>node server.js</code></p>" +
     "<p>" + t("srvB2") + "</p>" +

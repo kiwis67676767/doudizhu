@@ -48,6 +48,16 @@ The same wifi is usually enough; over the internet, put a tunnel in front of the
 - **Settings** for language, difficulty, card size, table colour, music and effects.
 - Music and sound effects synthesised in the browser with the Web Audio API.
 
+## Deploying
+
+The game is static, so any static host will do. This repo carries a `netlify.toml`
+that publishes the root and rewrites `/` to `doudizhu.html`, so connecting the repo
+to Netlify is enough — every push to `main` redeploys.
+
+The bots work exactly as they do locally. **Link-based multiplayer does not**: it
+needs `server.js`, which keeps long-lived connections and in-memory table state that
+static hosting cannot provide. Run that locally when you want to play with friends.
+
 ## Files
 
 | | |

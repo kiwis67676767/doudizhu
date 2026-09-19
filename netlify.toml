@@ -1,0 +1,25 @@
+# Static hosting for the game. There is no build step — doudizhu.html is the
+# whole thing — so the repo root is published as-is and "/" serves the game.
+#
+# Note: server.js is NOT run by Netlify. It keeps long-lived connections and
+# in-memory table state, which static hosting and short-lived functions cannot
+# provide, so link-based multiplayer needs it run locally. Bots work fine here.
+
+[build]
+  publish = "."
+
+[[redirects]]
+  from = "/"
+  to = "/doudizhu.html"
+  status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "no-referrer"
+
+[[headers]]
+  for = "/doudizhu.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
