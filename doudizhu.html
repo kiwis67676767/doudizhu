@@ -1,0 +1,3104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>斗地主 · Fight the Landlord</title>
+<style>
+:root{
+  --felt1:#0f5132; --felt2:#083d24; --felt3:#0a2e1c;
+  --gold:#e8c46a; --gold2:#b8912f;
+  --ink:#1b1b1b; --red:#c8102e;
+  --panel:rgba(0,0,0,.34); --line:rgba(255,255,255,.14);
+  --card-w:64px; --card-h:92px; --hand-ov:-30px;
+  --feltGlow:#17734a; --felt0:#17734a;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  margin:0; font-family:"Avenir Next","Helvetica Neue",Helvetica,"PingFang SC","Hiragino Sans GB",Arial,sans-serif;
+  background:radial-gradient(ellipse at 50% 8%, var(--feltGlow) 0%, var(--felt1) 34%, var(--felt2) 66%, var(--felt3) 100%);
+  color:#f2f2f2; overflow:hidden; user-select:none;
+}
+#app{height:100%;display:flex;flex-direction:column;max-width:1100px;margin:0 auto;position:relative}
+
+/* ---------- header ---------- */
+header{
+  display:flex;align-items:center;gap:10px;padding:8px 14px;flex-wrap:wrap;
+  border-bottom:1px solid var(--line);background:rgba(0,0,0,.2);flex:0 0 auto;
+}
+h1{font-size:17px;margin:0;letter-spacing:.06em;color:var(--gold);font-weight:600;white-space:nowrap}
+h1 small{color:#cfe6d8;font-weight:400;letter-spacing:.02em;font-size:11px;display:block;opacity:.75}
+.spacer{flex:1}
+.chip{
+  font-size:11px;padding:4px 10px;border-radius:999px;background:var(--panel);
+  border:1px solid var(--line);white-space:nowrap
+}
+.chip b{color:var(--gold);font-variant-numeric:tabular-nums}
+button{
+  font:inherit;font-size:13px;padding:7px 15px;border-radius:8px;cursor:pointer;
+  border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.09);color:#fff;
+  transition:transform .08s, background .15s, opacity .15s;
+}
+button:hover:not(:disabled){background:rgba(255,255,255,.18)}
+button:active:not(:disabled){transform:translateY(1px)}
+button:disabled{opacity:.32;cursor:default}
+button.gold{background:linear-gradient(#f0d283,var(--gold2));color:#2b1d00;border-color:#f5e2ae;font-weight:700}
+button.gold:hover:not(:disabled){filter:brightness(1.08);background:linear-gradient(#f7de9c,#c79c33)}
+button.ghost{font-size:12px;padding:5px 11px}
+#stakepick{display:flex;align-items:center;gap:5px;cursor:pointer}
+#langpick{display:flex;align-items:center;cursor:pointer}
+#langpick select,
+#stakepick select{
+  background:transparent;border:0;color:var(--gold);font:inherit;font-size:11.5px;
+  font-weight:700;cursor:pointer;outline:none;padding:0
+}
+#stakepick select option{background:var(--felt3);color:#fff}
+#bankchip b{font-variant-numeric:tabular-nums}
+.stakes,.seg{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 2px}
+.stakes button,.seg button{padding:5px 12px;font-size:12px}
+.stakes button.on,.seg button.on{background:linear-gradient(#f0d283,var(--gold2));color:#2b1d00;border-color:#f5e2ae;font-weight:700}
+.setrow{margin:0 0 11px}
+.setrow .lbl{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#a9c9b6;margin-bottom:5px}
+.setrow .note{font-size:11.5px;color:#8fb3a0;margin-top:5px;line-height:1.45}
+.swatches{display:flex;gap:8px;flex-wrap:wrap}
+.swatch{width:38px;height:38px;border-radius:9px;border:2px solid rgba(255,255,255,.2);cursor:pointer;padding:0}
+.swatch.on{border-color:var(--gold);box-shadow:0 0 0 3px rgba(232,196,106,.28)}
+.bust{color:#ff9c9c;font-size:12.5px;margin-top:8px}
+
+/* ---------- table ---------- */
+#table{flex:1 1 auto;position:relative;min-height:190px}
+.seat{position:absolute;top:14px;width:150px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.seat.left{left:8px} .seat.right{right:8px}
+.avatar{
+  width:54px;height:54px;border-radius:50%;display:grid;place-items:center;font-size:25px;
+  background:rgba(0,0,0,.38);border:2px solid var(--line);position:relative;transition:box-shadow .2s,border-color .2s;
+}
+.seat.active .avatar{border-color:var(--gold);box-shadow:0 0 0 4px rgba(232,196,106,.22),0 0 18px rgba(232,196,106,.45)}
+.pname{font-size:12.5px;letter-spacing:.03em}
+.badge{
+  position:absolute;bottom:-6px;left:50%;transform:translateX(-50%);
+  font-size:9.5px;padding:2px 7px;border-radius:999px;background:linear-gradient(#f0d283,var(--gold2));
+  color:#2b1d00;font-weight:800;letter-spacing:.05em;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.4)
+}
+.handcount{display:flex;align-items:center;gap:5px;font-size:12px;color:#d8ecdf}
+.handcount b{color:#fff;font-size:14px;font-variant-numeric:tabular-nums}
+.backfan{display:flex;height:26px;align-items:center}
+.backfan i{
+  display:block;width:15px;height:22px;border-radius:3px;margin-left:-9px;
+  background:repeating-linear-gradient(45deg,#a3272f 0 3px,#7d1c23 3px 6px);
+  border:1px solid rgba(255,255,255,.35);box-shadow:0 1px 2px rgba(0,0,0,.4)
+}
+.backfan i:first-child{margin-left:0}
+.thinking{font-size:11px;color:var(--gold);height:13px;letter-spacing:.06em}
+
+/* bottom (kitty) cards */
+#kitty{position:absolute;top:10px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:5px}
+#kitty .lbl{font-size:10.5px;letter-spacing:.14em;color:#a9c9b6;text-transform:uppercase}
+#kittycards{display:flex;gap:5px}
+
+/* the table centre: whatever was played last, with the turn status beneath it */
+#centre{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  display:flex;flex-direction:column;align-items:center;gap:12px;pointer-events:none;width:100%
+}
+#board{display:flex;flex-direction:column;align-items:center;gap:7px;min-height:0}
+#board .who{
+  font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#a9c9b6;
+  text-shadow:0 1px 3px rgba(0,0,0,.5)
+}
+#board .cards{display:flex}
+#board .cards .card{margin-left:-24px}
+#board .cards .card:first-child{margin-left:0}
+
+/* a player who passed is flagged at their own seat, not in the centre */
+.passtag{
+  font-size:12px;font-weight:800;letter-spacing:.14em;color:#ffd9a8;
+  padding:4px 12px;border-radius:7px;background:rgba(0,0,0,.35);border:1px dashed rgba(255,255,255,.3)
+}
+#passme{position:absolute;bottom:6px;left:50%;transform:translateX(-50%)}
+
+#status{text-align:center;font-size:14px;color:#d9ecdf;letter-spacing:.03em;width:260px}
+#status .big{font-size:20px;color:var(--gold);font-weight:700;letter-spacing:.08em}
+
+/* ---------- cards ---------- */
+.card{
+  width:var(--card-w);height:var(--card-h);border-radius:7px;background:linear-gradient(#fff,#f2f0ea);
+  box-shadow:0 2px 5px rgba(0,0,0,.45),inset 0 0 0 1px rgba(0,0,0,.09);
+  position:relative;flex:0 0 auto;color:var(--ink);overflow:hidden;
+}
+.card.red{color:var(--red)}
+.card .corner{position:absolute;top:3px;left:4px;line-height:.98;text-align:center;font-weight:800}
+.card .corner .r{display:block;font-size:16px}
+.card .corner .s{display:block;font-size:12px}
+.card .big{position:absolute;right:5px;bottom:2px;font-size:30px;opacity:.5;line-height:1}
+.card.joker .jk{
+  position:absolute;right:6px;top:16px;bottom:4px;width:16px;font-size:11px;font-weight:800;
+  letter-spacing:.06em;writing-mode:vertical-rl;display:grid;place-items:center;opacity:.75
+}
+.card.joker .corner .r{font-size:13px}
+.card.small{--card-w:44px;--card-h:63px;width:44px;height:63px;border-radius:5px}
+.card.small .corner .r{font-size:12px} .card.small .corner .s{font-size:9px}
+.card.small .big{font-size:20px} .card.small.joker .jk{font-size:8px;width:11px;top:13px}
+.card.mini{width:34px;height:49px;border-radius:4px}
+.card.mini .corner .r{font-size:10px} .card.mini .corner .s{font-size:7px}
+.card.mini .big{font-size:15px} .card.mini.joker .jk{font-size:7px;width:9px;top:11px}
+.card.facedown{background:repeating-linear-gradient(45deg,#a3272f 0 5px,#7d1c23 5px 10px);box-shadow:0 2px 5px rgba(0,0,0,.45),inset 0 0 0 2px rgba(255,255,255,.35)}
+.card.facedown *{display:none}
+@keyframes dealin{from{opacity:0;transform:translateY(26px) scale(.85)}to{opacity:1;transform:none}}
+#board .cards .card{animation:dealin .18s ease-out both}
+
+/* ---------- hand ---------- */
+#handwrap{flex:0 0 auto;padding:12px 10px 6px;display:flex;justify-content:center;align-items:flex-end;min-height:118px}
+#hand{display:flex;justify-content:center;padding-top:20px}
+#hand .card{margin-left:var(--hand-ov);cursor:pointer;transition:transform .12s ease-out,box-shadow .12s}
+#hand .card:first-child{margin-left:0}
+#hand .card:hover{transform:translateY(-9px)}
+#hand .card.sel{transform:translateY(-22px);box-shadow:0 8px 14px rgba(0,0,0,.5),0 0 0 2px var(--gold)}
+#hand.locked .card{cursor:default}
+#hand.locked .card:hover{transform:none}
+#hand.locked .card.sel{transform:translateY(-22px)}
+
+/* ---------- controls ---------- */
+#controls{
+  flex:0 0 auto;display:flex;justify-content:center;align-items:center;gap:10px;
+  padding:8px 12px 14px;min-height:56px;flex-wrap:wrap
+}
+#combolabel{
+  position:absolute;left:50%;transform:translateX(-50%);bottom:74px;font-size:12px;letter-spacing:.05em;
+  color:var(--gold);height:16px;pointer-events:none;text-shadow:0 1px 3px #000
+}
+#combolabel.bad{color:#ff9c9c}
+
+/* ---------- log ---------- */
+#log{
+  position:absolute;right:10px;bottom:8px;width:186px;max-height:120px;overflow:hidden;
+  font-size:11px;line-height:1.5;color:#bcd9c7;background:var(--panel);border:1px solid var(--line);
+  border-radius:8px;padding:7px 9px;pointer-events:none;display:flex;flex-direction:column-reverse
+}
+#log div{opacity:.9}
+#log b{color:var(--gold)}
+
+/* ---------- modal ---------- */
+.overlay{
+  position:absolute;inset:0;background:rgba(0,0,0,.72);
+  display:grid;place-items:center;z-index:40;padding:20px
+}
+/* keep every control in a dialog above its own backdrop, whatever the browser does
+   with stacking inside the panel */
+.modal button,.modal .seg,.modal .stakes,.modal .swatches,.modal .row{position:relative;z-index:2}
+.overlay.hidden{display:none}
+.modal{
+  background:linear-gradient(var(--felt1),var(--felt3));border:1px solid var(--gold2);border-radius:14px;
+  padding:22px 26px;max-width:520px;width:100%;box-shadow:0 24px 60px rgba(0,0,0,.6);
+  max-height:86vh;overflow:auto
+}
+.modal h2{margin:0 0 4px;color:var(--gold);font-size:21px;letter-spacing:.04em}
+.modal .sub{font-size:12.5px;color:#a9c9b6;margin-bottom:14px}
+.modal p,.modal li{font-size:13px;line-height:1.62;color:#e2f0e7}
+.modal ul{padding-left:18px;margin:8px 0}
+.modal .row{display:flex;gap:10px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}
+.tally{width:100%;border-collapse:collapse;margin:10px 0 4px;font-size:13px}
+.tally th,.tally td{padding:6px 8px;border-bottom:1px solid rgba(255,255,255,.12);text-align:right}
+.tally th:first-child,.tally td:first-child{text-align:left}
+.tally td.pos{color:#7ee0a0} .tally td.neg{color:#ff9c9c}
+.tally .me{color:var(--gold)}
+kbd{background:rgba(255,255,255,.12);border-radius:4px;padding:1px 5px;font-size:11px}
+
+/* ---------- achievements ---------- */
+#toasts{
+  position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:60;
+  display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none
+}
+.toast{
+  display:flex;align-items:center;gap:11px;padding:10px 16px;border-radius:11px;
+  background:linear-gradient(#1d6a47,#0d3f2a);border:1px solid var(--gold2);
+  box-shadow:0 10px 28px rgba(0,0,0,.5);font-size:12.5px;line-height:1.35;color:#eaf6ee;
+  animation:toastin .32s cubic-bezier(.2,1.3,.4,1) both;max-width:300px
+}
+.toast.out{animation:toastout .45s ease-in forwards}
+.toast .ti{font-size:26px;line-height:1}
+.toast b{color:var(--gold);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase}
+@keyframes toastin{from{opacity:0;transform:translateY(-18px) scale(.9)}to{opacity:1;transform:none}}
+@keyframes toastout{to{opacity:0;transform:translateY(-14px)}}
+.achlist{list-style:none;padding:0;margin:12px 0 4px;max-height:52vh;overflow:auto}
+.achlist li{
+  display:flex;align-items:center;gap:12px;padding:9px 12px;margin-bottom:7px;border-radius:10px;
+  background:rgba(0,0,0,.22);border:1px solid var(--line);opacity:.55
+}
+.achlist li.got{opacity:1;border-color:var(--gold2);background:rgba(232,196,106,.10)}
+.achlist .ai{font-size:22px;width:28px;text-align:center;flex:0 0 auto}
+.achlist .atx{flex:1;font-size:12.5px;line-height:1.4}
+.achlist .atx b{color:var(--gold);font-size:13px}
+.achlist li:not(.got) .atx b{color:#cfe6d8}
+.achlist .atx span{color:#a9c9b6;font-size:11.5px}
+.achlist .apr{font-size:11px;color:var(--gold);font-variant-numeric:tabular-nums;flex:0 0 auto}
+
+/* ---------- home screen ---------- */
+#home{z-index:30}
+#overlay{z-index:80}       /* a dialog outranks the home screen and the toasts */
+.modal.home{max-width:560px;text-align:center}
+.hero{font-size:44px;color:var(--gold);letter-spacing:.16em;font-weight:700;line-height:1.1}
+.heroSub{font-size:12.5px;letter-spacing:.3em;text-transform:uppercase;color:#a9c9b6;margin-top:6px}
+.modes{display:flex;gap:12px;margin:24px 0 14px;flex-wrap:wrap}
+button.mode{
+  flex:1 1 200px;display:flex;flex-direction:column;align-items:flex-start;gap:5px;
+  padding:16px 16px 15px;text-align:left;border-radius:12px;background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.17);
+}
+button.mode:hover{background:rgba(255,255,255,.14);border-color:var(--gold2)}
+button.mode .mi{font-size:26px;line-height:1}
+button.mode .mt{font-size:15px;font-weight:700;color:var(--gold);letter-spacing:.02em}
+button.mode .md{font-size:11.5px;color:#c3dccd;line-height:1.5;font-weight:400}
+.hint{font-size:11px;color:#7fa992;margin:2px 0 10px;letter-spacing:.02em}
+.homefoot{display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap}
+.homefoot .bankline{margin-left:auto}
+.bankline{font-size:11.5px;color:#a9c9b6}
+.bankline b{color:var(--gold)}
+.lobby{text-align:left}
+.seatlist{list-style:none;padding:0;margin:12px 0}
+.seatlist li{
+  display:flex;align-items:center;gap:9px;padding:9px 12px;margin-bottom:7px;border-radius:9px;
+  background:rgba(0,0,0,.24);border:1px solid var(--line);font-size:13px
+}
+.seatlist .tag{margin-left:auto;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#a9c9b6}
+.seatlist .tag.here{color:#7ee0a0}
+.linkbox{
+  display:flex;gap:8px;align-items:center;margin:12px 0 4px;background:rgba(0,0,0,.3);
+  border:1px solid var(--line);border-radius:9px;padding:9px 11px
+}
+.linkbox input{
+  flex:1;background:transparent;border:0;color:#e2f0e7;font:inherit;font-size:12px;outline:none;
+  text-overflow:ellipsis
+}
+.hostnote{font-size:11.5px;color:#a9c9b6;line-height:1.6;margin-top:10px}
+.hostnote code{background:rgba(0,0,0,.35);padding:2px 6px;border-radius:4px;font-size:11px;color:#e8c46a}
+
+@media (max-width:820px){
+  header{gap:7px;padding:7px 10px}
+  .chip{font-size:10.5px;padding:3px 8px}
+  button{font-size:12px;padding:6px 11px}
+  :root{--card-w:52px;--card-h:75px}
+  .seat{width:112px}
+  #log{display:none}
+  h1 small{display:none}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>斗地主 <small>Fight the Landlord</small></h1>
+    <div class="chip" id="bankchip">You <b>0</b> · East <b>0</b> · West <b>0</b></div>
+    <label class="chip" id="stakepick"><span id="stakelbl">Stake</span> <select id="stakesel"></select></label>
+    <div class="chip" id="stakechip">—</div>
+    <div class="spacer"></div>
+    <button class="ghost" id="btnmute" title="Music">🔊</button>
+    <button class="ghost" id="btnrules">Rules</button>
+    <button class="ghost" id="btnnew">New hand</button>
+    <button class="ghost" id="btnexit">Exit</button>
+  </header>
+
+  <div id="table">
+    <div class="seat left" id="seat2">
+      <div class="avatar">🧑‍🌾<span class="badge" style="display:none"></span></div>
+      <div class="pname">West</div>
+      <div class="handcount"><span class="backfan"></span><b>0</b></div>
+      <div class="thinking"></div>
+      <div class="passtag seatpass" style="display:none">PASS</div>
+    </div>
+    <div class="seat right" id="seat1">
+      <div class="avatar">👩‍🌾<span class="badge" style="display:none"></span></div>
+      <div class="pname">East</div>
+      <div class="handcount"><span class="backfan"></span><b>0</b></div>
+      <div class="thinking"></div>
+      <div class="passtag seatpass" style="display:none">PASS</div>
+    </div>
+
+    <div id="kitty">
+      <div class="lbl">Landlord's three</div>
+      <div id="kittycards"></div>
+    </div>
+
+    <div id="centre">
+      <div id="board"></div>
+      <div id="status"></div>
+    </div>
+
+    <div class="passtag" id="passme" style="display:none">PASS</div>
+
+    <div id="log"></div>
+  </div>
+
+  <div id="handwrap"><div id="hand"></div></div>
+  <div id="combolabel"></div>
+  <div id="controls"></div>
+
+  <div id="toasts"></div>
+
+  <div class="overlay" id="home">
+    <div class="modal home">
+      <div class="hero">斗地主</div>
+      <div class="heroSub">Fight the Landlord</div>
+      <div class="modes">
+        <button class="mode" id="modeAi">
+          <span class="mi">🤖</span>
+          <span class="mt">Play the bots</span>
+          <span class="md">One seat for you, two for the AI. Works offline, nothing to set up.</span>
+        </button>
+        <button class="mode" id="modeOnline">
+          <span class="mi">🔗</span>
+          <span class="mt">Play with friends</span>
+          <span class="md">Get a link to send round. Empty seats are filled by bots.</span>
+        </button>
+      </div>
+      <div class="hint" id="homeHint"></div>
+      <div class="homefoot">
+        <button class="ghost" id="homeAch">Achievements</button>
+        <button class="ghost" id="homeSettings">Settings</button>
+        <button class="ghost" id="homeRules">How to play</button>
+        <span class="bankline" id="homeBank"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="overlay"><div class="modal" id="modal"></div></div>
+</div>
+<script>
+"use strict";
+/* =======================================================================
+   Dou Dizhu (斗地主) — 3 player Fight the Landlord
+   Rules per pagat.com: 54 cards, auction 1/2/3, 13 combination types,
+   bombs/rockets double the stake, spring doubles again.
+   ======================================================================= */
+
+/* ---------------- cards ---------------- */
+var R_NAME = {3:"3",4:"4",5:"5",6:"6",7:"7",8:"8",9:"9",10:"10",11:"J",12:"Q",13:"K",14:"A",15:"2",16:"小",17:"大"};
+var SUIT = [{g:"♠",c:"black"},{g:"♥",c:"red"},{g:"♦",c:"red"},{g:"♣",c:"black"}];
+var TYPE_NAME = {
+  single:"Single", pair:"Pair", triple:"Triple", triple1:"Triple + single", triple2:"Triple + pair",
+  straight:"Straight", pairseq:"Pair sequence", tripseq:"Airplane", plane1:"Airplane + singles",
+  plane2:"Airplane + pairs", bomb:"💣 Bomb", rocket:"🚀 Rocket",
+  quad1:"Quad + 2 singles", quad2:"Quad + 2 pairs"
+};
+
+/* ======================= languages =======================
+   Every player-visible string lives here. Adding a language is one more entry —
+   nothing outside this table needs to change. */
+var LANGS = [
+  {id:"en",   label:"English"},
+  {id:"zh",   label:"简体中文"},
+  {id:"zhT",  label:"繁體中文"},
+  {id:"es",   label:"Español"}
+];
+var STR = {
+en:{
+  sub:"Fight the Landlord", rules:"Rules", newHand:"New hand", exit:"Exit",
+  stake:"Stake", perPt:"{0}/pt", basePt:"Base <b>{0}</b>/pt",
+  exposure:"{0}/pt × bid {1}{2} = <b>{3}</b> ea · you risk <b>{4}</b>",
+  you:"You", east:"East", west:"West", player:"Player", bot:"Bot",
+  landlordTag:"LANDLORD 地主", kitty:"Landlord's three", passTag:"PASS",
+  pass:"Pass", bid:"Bid {0}", hint:"Hint", clear:"Clear", play:"Play",
+  c_single:"Single", c_pair:"Pair", c_triple:"Triple", c_triple1:"Triple + single",
+  c_triple2:"Triple + pair", c_straight:"Straight", c_pairseq:"Pair sequence",
+  c_tripseq:"Airplane", c_plane1:"Airplane + singles", c_plane2:"Airplane + pairs",
+  c_bomb:"💣 Bomb", c_rocket:"🚀 Rocket", c_quad1:"Quad + 2 singles", c_quad2:"Quad + 2 pairs",
+  setSfx:"Sound effects",
+  setMusic:"Music", musicOn:"On", musicOff:"Off",
+  homeKeys:"Keys: 1 bots · 2 friends · A achievements · S settings",
+  achievements:"Achievements", achGot:"Achievement unlocked", achCount:"{0} of {1} unlocked", achBest:"best streak {0}",
+  settings:"Settings", setLang:"Language", setDiff:"Bot difficulty",
+  diffImpossible:"Impossible",
+  diffEasy:"Easy", diffNormal:"Normal", diffHard:"Hard",
+  diffNote:"Easy bots dawdle and miss tricks. Hard bots count what has been played and block you in the endgame. Impossible bots see your cards — they lead what you cannot answer.",
+  setCards:"Card size", szS:"Small", szM:"Medium", szL:"Large",
+  setFelt:"Table colour", feltGreen:"Green", feltBlue:"Blue", feltBurgundy:"Burgundy",
+  feltSlate:"Slate", feltPurple:"Purple", done:"Done",
+  playedYou:"You played", playedX:"{0} played",
+  notLegal:"Not a legal combination", noBeat:"{0} — does not beat {1}",
+  yourBid:"Your bid", highest:"highest bid {0}", noBids:"no bids yet",
+  auction:"Auction", bidding:"bidding…", thinking:"thinking…", playingE:"playing…",
+  yourTurn:"Your turn", youLead:"you lead", beatThe:"beat the {0}", theirTurn:"their turn…",
+  youLandlord:"You are the landlord", xLandlord:"{0} is the landlord",
+  takesThree:"takes the three face-down cards…", allPassed:"All passed", redealing:"redealing…",
+  logDealYou:"<b>New deal.</b> You open the bidding.",
+  logDealX:"<b>New deal.</b> {0} opens the bidding.",
+  logBidYou:"You bid <b>{0}</b>.", logBidX:"{0} bids <b>{1}</b>.",
+  logPassYou:"You pass.", logPassX:"{0} passes.",
+  logThrownIn:"Everyone passed — the hand is thrown in.",
+  logLandlordYou:"<b>You</b> are the landlord for <b>{0}</b>.",
+  logLandlordX:"<b>{0}</b> is the landlord for <b>{1}</b>.",
+  logMove:"{0}: {1}", logPassShort:"{0}: pass",
+  logBomb:"<b>{0} — {1}!</b> Stake doubled.",
+  logOut:"<b>{0}</b> went out. {1} <b>{2}</b> a head.",
+  llWins:"Landlord wins", peaWins:"Peasants win",
+  logRebuy:"{0} is cleaned out and rebuys <b>{1}</b>.",
+  logLeft:"<b>{0}</b> left — a bot takes the seat.",
+  win:"You win 🎉", lose:"You lose",
+  emptiedYou:"{0} emptied your hand — {1}", emptiedX:"{0} emptied their hand — {1}",
+  llTakes:"the landlord takes it.", peaTakes:"the peasants take it.",
+  resultLine:"Bid <b>{0}</b> × bombs/rockets <b>{1}×</b>{2} = <b>{3}</b> points, at <b>{4}</b> a point = <b>{5}</b> chips per opponent.",
+  springX2:" × spring <b>2×</b>",
+  spring:"Spring 春天 — the peasants never played a card. ×2",
+  antiSpring:"Anti-spring 反春天 — the landlord played only once. ×2",
+  capped:"Table stakes — the full amount could not be covered, so only what was on the table changed hands.",
+  thPlayer:"Player", thHand:"This hand", thBank:"Bank", landlordCol:" · landlord",
+  stakeNext:"Stake for the next deal:", resetBank:"Reset bank", nextDeal:"Next deal",
+  rebuy:"Rebuy {0}", outChips:"You are out of chips. Rebuy to keep playing.",
+  waitDealer:"Waiting for the dealer to start the next hand…",
+  outTitle:"Out of chips", outSub:"Your bank is empty.",
+  outBody:"Take a fresh stack of <b>{0}</b> chips and carry on.",
+  modeAiT:"Play the bots", modeAiD:"One seat for you, two for the AI. Works offline, nothing to set up.",
+  modeOnT:"Play with friends", modeOnD:"Get a link to send round. Empty seats are filled by bots.",
+  howTo:"How to play", yourBank:"Your bank <b>{0}</b> chips",
+  yourTable:"Your table", joiningTable:"Joining table",
+  tableIs:"Table <b>{0}</b> · empty seats are played by bots.",
+  copy:"Copy", copied:"Copied", leave:"Leave", deal:"Deal",
+  tagYou:"you", tagJoined:"joined", tagBot:"bot",
+  hostNote:"Send that link to the other players. They must be able to reach this machine — the same wifi is usually enough.",
+  waitStart:"Waiting for the dealer to start…",
+  fullT:"Table full", fullB:"All three seats at that table are taken.",
+  closedT:"Table closed", closedB:"The dealer disconnected, so this table has ended.",
+  backMenu:"Back to menu",
+  srvT:"Playing with friends needs the table server",
+  srvSub:"This page is open straight from a file, so there is no address to share.",
+  srvB1:"In a terminal, from the folder holding this game:",
+  srvB2:"It prints an address such as <code>http://192.168.1.20:8080</code>. Open that, choose <b>Play with friends</b>, and you will get a link to send round. Anyone who can reach your machine can join — the same wifi is usually enough. Over the internet, put a tunnel in front of the port.",
+  gotIt:"Got it"
+},
+zh:{
+  sub:"经典三人扑克", rules:"规则", newHand:"新一局", exit:"退出",
+  stake:"底注", perPt:"{0}/分", basePt:"底注 <b>{0}</b>/分",
+  exposure:"{0}/分 × 叫{1}分{2} = 每家 <b>{3}</b> · 你押上 <b>{4}</b>",
+  you:"你", east:"东家", west:"西家", player:"玩家", bot:"电脑",
+  landlordTag:"地主", kitty:"底牌", passTag:"不要",
+  pass:"不要", bid:"叫 {0} 分", hint:"提示", clear:"重选", play:"出牌",
+  c_single:"单张", c_pair:"对子", c_triple:"三张", c_triple1:"三带一",
+  c_triple2:"三带一对", c_straight:"顺子", c_pairseq:"连对",
+  c_tripseq:"飞机", c_plane1:"飞机带单张", c_plane2:"飞机带对子",
+  c_bomb:"💣 炸弹", c_rocket:"🚀 王炸", c_quad1:"四带二", c_quad2:"四带两对",
+  setSfx:"音效",
+  setMusic:"音乐", musicOn:"开", musicOff:"关",
+  homeKeys:"快捷键：1 电脑 · 2 朋友 · A 成就 · S 设置",
+  achievements:"成就", achGot:"达成成就", achCount:"已达成 {0}/{1}", achBest:"最高连胜 {0}",
+  settings:"设置", setLang:"语言", setDiff:"电脑难度",
+  diffImpossible:"地狱",
+  diffEasy:"简单", diffNormal:"普通", diffHard:"困难",
+  diffNote:"简单：出牌拖沓，常常放过该管的牌。困难：会记牌，残局阶段专门堵你。地狱：能看到你的牌，专出你管不上的。",
+  setCards:"手牌大小", szS:"小", szM:"中", szL:"大",
+  setFelt:"桌面颜色", feltGreen:"绿色", feltBlue:"蓝色", feltBurgundy:"酒红",
+  feltSlate:"石板灰", feltPurple:"紫色", done:"完成",
+  playedYou:"你出的牌", playedX:"{0}出的牌",
+  notLegal:"不是合法牌型", noBeat:"{0} — 管不上{1}",
+  yourBid:"你叫分", highest:"当前最高 {0} 分", noBids:"还没有人叫分",
+  auction:"叫分", bidding:"叫分中…", thinking:"思考中…", playingE:"出牌中…",
+  yourTurn:"轮到你了", youLead:"你先出", beatThe:"要管上{0}", theirTurn:"轮到他了…",
+  youLandlord:"你是地主", xLandlord:"{0}是地主",
+  takesThree:"收下三张底牌…", allPassed:"都不叫", redealing:"重新发牌…",
+  logDealYou:"<b>新一局。</b>你先叫分。",
+  logDealX:"<b>新一局。</b>{0}先叫分。",
+  logBidYou:"你叫了 <b>{0}</b> 分。", logBidX:"{0}叫了 <b>{1}</b> 分。",
+  logPassYou:"你不叫。", logPassX:"{0}不叫。",
+  logThrownIn:"都不叫 — 这局作废。",
+  logLandlordYou:"<b>你</b>当地主，底分 <b>{0}</b>。",
+  logLandlordX:"<b>{0}</b>当地主，底分 <b>{1}</b>。",
+  logMove:"{0}：{1}", logPassShort:"{0}：不要",
+  logBomb:"<b>{0} — {1}！</b>翻倍。",
+  logOut:"<b>{0}</b>出完了。{1} <b>{2}</b>（每家）。",
+  llWins:"地主赢", peaWins:"农民赢",
+  logRebuy:"{0}输光了，重新买入 <b>{1}</b>。",
+  logLeft:"<b>{0}</b>离开了 — 由电脑接手。",
+  win:"你赢了 🎉", lose:"你输了",
+  emptiedYou:"{0}先出完了牌 — {1}", emptiedX:"{0}先出完了牌 — {1}",
+  llTakes:"地主赢。", peaTakes:"农民赢。",
+  resultLine:"底分 <b>{0}</b> × 炸弹 <b>{1}×</b>{2} = <b>{3}</b> 分，每分 <b>{4}</b> = 每家 <b>{5}</b> 筹码。",
+  springX2:" × 春天 <b>2×</b>",
+  spring:"春天 — 农民一张牌都没出上。×2",
+  antiSpring:"反春天 — 地主只出了一手牌。×2",
+  capped:"按桌上筹码结算 — 不够全额支付，只结算了桌面上的部分。",
+  thPlayer:"玩家", thHand:"本局", thBank:"筹码", landlordCol:" · 地主",
+  stakeNext:"下一局的底注：", resetBank:"重置筹码", nextDeal:"下一局",
+  rebuy:"买入 {0}", outChips:"你的筹码输光了，买入后可继续。",
+  waitDealer:"等待房主开始下一局…",
+  outTitle:"筹码输光", outSub:"你的筹码为零。",
+  outBody:"重新买入 <b>{0}</b> 筹码继续玩。",
+  modeAiT:"和电脑玩", modeAiD:"你一个座位，电脑两个。离线可玩，无需设置。",
+  modeOnT:"和朋友玩", modeOnD:"生成链接发给朋友。空位由电脑补上。",
+  howTo:"玩法说明", yourBank:"你的筹码 <b>{0}</b>",
+  yourTable:"你的牌桌", joiningTable:"正在加入牌桌",
+  tableIs:"房间 <b>{0}</b> · 空位由电脑补上。",
+  copy:"复制", copied:"已复制", leave:"离开", deal:"发牌",
+  tagYou:"你", tagJoined:"已加入", tagBot:"电脑",
+  hostNote:"把链接发给其他玩家。他们要能连到这台电脑 — 同一个 wifi 通常就够了。",
+  waitStart:"等待房主发牌…",
+  fullT:"牌桌已满", fullB:"这张牌桌的三个座位都有人了。",
+  closedT:"牌桌已关闭", closedB:"房主断开了连接，本桌结束。",
+  backMenu:"返回主页",
+  srvT:"和朋友玩需要启动服务器",
+  srvSub:"这个页面是直接从文件打开的，没有可以分享的网址。",
+  srvB1:"在终端里，进入游戏所在的文件夹运行：",
+  srvB2:"它会显示一个地址，例如 <code>http://192.168.1.20:8080</code>。打开它，选择<b>和朋友玩</b>，就会得到可以分享的链接。能连到你这台电脑的人都可以加入 — 同一个 wifi 通常就够了。要跨网络玩，请在该端口前加一层内网穿透。",
+  gotIt:"知道了"
+},
+es:{
+  sub:"Lucha contra el terrateniente", rules:"Reglas", newHand:"Nueva mano", exit:"Salir",
+  stake:"Apuesta", perPt:"{0}/pt", basePt:"Base <b>{0}</b>/pt",
+  exposure:"{0}/pt × puja {1}{2} = <b>{3}</b> c/u · arriesgas <b>{4}</b>",
+  you:"Tú", east:"Este", west:"Oeste", player:"Jugador", bot:"Bot",
+  landlordTag:"TERRATENIENTE 地主", kitty:"Las tres del terrateniente", passTag:"PASO",
+  pass:"Paso", bid:"Pujar {0}", hint:"Pista", clear:"Limpiar", play:"Jugar",
+  c_single:"Carta suelta", c_pair:"Pareja", c_triple:"Trío", c_triple1:"Trío + suelta",
+  c_triple2:"Trío + pareja", c_straight:"Escalera", c_pairseq:"Escalera de parejas",
+  c_tripseq:"Avión", c_plane1:"Avión + sueltas", c_plane2:"Avión + parejas",
+  c_bomb:"💣 Bomba", c_rocket:"🚀 Cohete", c_quad1:"Cuarteto + 2 sueltas", c_quad2:"Cuarteto + 2 parejas",
+  setSfx:"Efectos de sonido",
+  setMusic:"Música", musicOn:"Sí", musicOff:"No",
+  homeKeys:"Teclas: 1 bots · 2 amigos · A logros · S ajustes",
+  achievements:"Logros", achGot:"Logro desbloqueado", achCount:"{0} de {1} desbloqueados", achBest:"mejor racha {0}",
+  settings:"Ajustes", setLang:"Idioma", setDiff:"Dificultad de los bots",
+  diffImpossible:"Imposible",
+  diffEasy:"Fácil", diffNormal:"Normal", diffHard:"Difícil",
+  diffNote:"Los bots fáciles se entretienen y dejan pasar bazas. Los difíciles cuentan las cartas jugadas y te bloquean en el final. Los imposibles ven tus cartas — juegan lo que no puedes superar.",
+  setCards:"Tamaño de las cartas", szS:"Pequeñas", szM:"Medianas", szL:"Grandes",
+  setFelt:"Color de la mesa", feltGreen:"Verde", feltBlue:"Azul", feltBurgundy:"Burdeos",
+  feltSlate:"Pizarra", feltPurple:"Morado", done:"Listo",
+  playedYou:"Jugaste", playedX:"{0} jugó",
+  notLegal:"No es una combinación válida", noBeat:"{0} — no supera {1}",
+  yourBid:"Tu puja", highest:"puja más alta {0}", noBids:"aún sin pujas",
+  auction:"Subasta", bidding:"pujando…", thinking:"pensando…", playingE:"jugando…",
+  yourTurn:"Tu turno", youLead:"abres tú", beatThe:"supera {0}", theirTurn:"su turno…",
+  youLandlord:"Eres el terrateniente", xLandlord:"{0} es el terrateniente",
+  takesThree:"toma las tres cartas tapadas…", allPassed:"Todos pasaron", redealing:"repartiendo de nuevo…",
+  logDealYou:"<b>Nuevo reparto.</b> Abres la subasta.",
+  logDealX:"<b>Nuevo reparto.</b> {0} abre la subasta.",
+  logBidYou:"Pujaste <b>{0}</b>.", logBidX:"{0} puja <b>{1}</b>.",
+  logPassYou:"Pasas.", logPassX:"{0} pasa.",
+  logThrownIn:"Todos pasaron — la mano se anula.",
+  logLandlordYou:"<b>Tú</b> eres el terrateniente por <b>{0}</b>.",
+  logLandlordX:"<b>{0}</b> es el terrateniente por <b>{1}</b>.",
+  logMove:"{0}: {1}", logPassShort:"{0}: paso",
+  logBomb:"<b>{0} — {1}!</b> Apuesta doblada.",
+  logOut:"<b>{0}</b> se quedó sin cartas. {1} <b>{2}</b> por cabeza.",
+  llWins:"Gana el terrateniente", peaWins:"Ganan los campesinos",
+  logRebuy:"{0} se quedó sin fichas y recompra <b>{1}</b>.",
+  logLeft:"<b>{0}</b> se fue — un bot ocupa el asiento.",
+  win:"Ganas 🎉", lose:"Pierdes",
+  emptiedYou:"{0} se quedó sin cartas — {1}", emptiedX:"{0} se quedó sin cartas — {1}",
+  llTakes:"gana el terrateniente.", peaTakes:"ganan los campesinos.",
+  resultLine:"Puja <b>{0}</b> × bombas/cohetes <b>{1}×</b>{2} = <b>{3}</b> puntos, a <b>{4}</b> por punto = <b>{5}</b> fichas por rival.",
+  springX2:" × primavera <b>2×</b>",
+  spring:"Primavera 春天 — los campesinos no jugaron ni una carta. ×2",
+  antiSpring:"Anti-primavera 反春天 — el terrateniente jugó una sola vez. ×2",
+  capped:"Apuesta limitada a la mesa — no se pudo cubrir el total, así que solo cambió de manos lo que había sobre la mesa.",
+  thPlayer:"Jugador", thHand:"Esta mano", thBank:"Banca", landlordCol:" · terrateniente",
+  stakeNext:"Apuesta para el próximo reparto:", resetBank:"Reiniciar banca", nextDeal:"Siguiente reparto",
+  rebuy:"Recomprar {0}", outChips:"Te quedaste sin fichas. Recompra para seguir jugando.",
+  waitDealer:"Esperando a que reparta la siguiente mano…",
+  outTitle:"Sin fichas", outSub:"Tu banca está vacía.",
+  outBody:"Toma un nuevo montón de <b>{0}</b> fichas y sigue jugando.",
+  modeAiT:"Jugar contra bots", modeAiD:"Un asiento para ti, dos para la IA. Funciona sin conexión.",
+  modeOnT:"Jugar con amigos", modeOnD:"Consigue un enlace para compartir. Los asientos libres los cubren bots.",
+  howTo:"Cómo se juega", yourBank:"Tu banca <b>{0}</b> fichas",
+  yourTable:"Tu mesa", joiningTable:"Entrando a la mesa",
+  tableIs:"Mesa <b>{0}</b> · los asientos libres los juegan bots.",
+  copy:"Copiar", copied:"Copiado", leave:"Salir", deal:"Repartir",
+  tagYou:"tú", tagJoined:"dentro", tagBot:"bot",
+  hostNote:"Envía ese enlace a los demás jugadores. Tienen que poder alcanzar este equipo — con el mismo wifi suele bastar.",
+  waitStart:"Esperando a que se reparta…",
+  fullT:"Mesa llena", fullB:"Los tres asientos de esa mesa están ocupados.",
+  closedT:"Mesa cerrada", closedB:"Quien repartía se desconectó, así que la mesa terminó.",
+  backMenu:"Volver al menú",
+  srvT:"Jugar con amigos necesita el servidor de mesa",
+  srvSub:"Esta página está abierta directamente desde un archivo, así que no hay dirección que compartir.",
+  srvB1:"En una terminal, desde la carpeta que contiene el juego:",
+  srvB2:"Mostrará una dirección como <code>http://192.168.1.20:8080</code>. Ábrela, elige <b>Jugar con amigos</b> y obtendrás un enlace para compartir. Puede entrar cualquiera que alcance tu equipo — con el mismo wifi suele bastar. Por internet, pon un túnel delante del puerto.",
+  gotIt:"Entendido"
+},
+zhT:{
+  sub:"經典三人撲克", rules:"規則", newHand:"新一局", exit:"退出",
+  stake:"底注", perPt:"{0}/分", basePt:"底注 <b>{0}</b>/分",
+  exposure:"{0}/分 × 叫{1}分{2} = 每家 <b>{3}</b> · 你押上 <b>{4}</b>",
+  you:"你", east:"東家", west:"西家", player:"玩家", bot:"電腦",
+  landlordTag:"地主", kitty:"底牌", passTag:"不要",
+  pass:"不要", bid:"叫 {0} 分", hint:"提示", clear:"重選", play:"出牌",
+  c_single:"單張", c_pair:"對子", c_triple:"三張", c_triple1:"三帶一",
+  c_triple2:"三帶一對", c_straight:"順子", c_pairseq:"連對",
+  c_tripseq:"飛機", c_plane1:"飛機帶單張", c_plane2:"飛機帶對子",
+  c_bomb:"💣 炸彈", c_rocket:"🚀 王炸", c_quad1:"四帶二", c_quad2:"四帶兩對",
+  setSfx:"音效",
+  setMusic:"音樂", musicOn:"開", musicOff:"關",
+  homeKeys:"快捷鍵：1 電腦 · 2 朋友 · A 成就 · S 設定",
+  achievements:"成就", achGot:"達成成就", achCount:"已達成 {0}/{1}", achBest:"最高連勝 {0}",
+  settings:"設定", setLang:"語言", setDiff:"電腦難度",
+  diffImpossible:"地獄",
+  diffEasy:"簡單", diffNormal:"普通", diffHard:"困難",
+  diffNote:"簡單：出牌拖沓，常常放過該管的牌。困難：會記牌，殘局階段專門堵你。地獄：能看到你的牌，專出你管不上的。",
+  setCards:"手牌大小", szS:"小", szM:"中", szL:"大",
+  setFelt:"桌面顏色", feltGreen:"綠色", feltBlue:"藍色", feltBurgundy:"酒紅",
+  feltSlate:"石板灰", feltPurple:"紫色", done:"完成",
+  playedYou:"你出的牌", playedX:"{0}出的牌",
+  notLegal:"不是合法牌型", noBeat:"{0} — 管不上{1}",
+  yourBid:"你叫分", highest:"目前最高 {0} 分", noBids:"還沒有人叫分",
+  auction:"叫分", bidding:"叫分中…", thinking:"思考中…", playingE:"出牌中…",
+  yourTurn:"輪到你了", youLead:"你先出", beatThe:"要管上{0}", theirTurn:"輪到他了…",
+  youLandlord:"你是地主", xLandlord:"{0}是地主",
+  takesThree:"收下三張底牌…", allPassed:"都不叫", redealing:"重新發牌…",
+  logDealYou:"<b>新一局。</b>你先叫分。",
+  logDealX:"<b>新一局。</b>{0}先叫分。",
+  logBidYou:"你叫了 <b>{0}</b> 分。", logBidX:"{0}叫了 <b>{1}</b> 分。",
+  logPassYou:"你不叫。", logPassX:"{0}不叫。",
+  logThrownIn:"都不叫 — 這局作廢。",
+  logLandlordYou:"<b>你</b>當地主，底分 <b>{0}</b>。",
+  logLandlordX:"<b>{0}</b>當地主，底分 <b>{1}</b>。",
+  logMove:"{0}：{1}", logPassShort:"{0}：不要",
+  logBomb:"<b>{0} — {1}！</b>翻倍。",
+  logOut:"<b>{0}</b>出完了。{1} <b>{2}</b>（每家）。",
+  llWins:"地主贏", peaWins:"農民贏",
+  logRebuy:"{0}輸光了，重新買入 <b>{1}</b>。",
+  logLeft:"<b>{0}</b>離開了 — 由電腦接手。",
+  win:"你贏了 🎉", lose:"你輸了",
+  emptiedYou:"{0}先出完了牌 — {1}", emptiedX:"{0}先出完了牌 — {1}",
+  llTakes:"地主贏。", peaTakes:"農民贏。",
+  resultLine:"底分 <b>{0}</b> × 炸彈 <b>{1}×</b>{2} = <b>{3}</b> 分，每分 <b>{4}</b> = 每家 <b>{5}</b> 籌碼。",
+  springX2:" × 春天 <b>2×</b>",
+  spring:"春天 — 農民一張牌都沒出上。×2",
+  antiSpring:"反春天 — 地主只出了一手牌。×2",
+  capped:"按桌上籌碼結算 — 不夠全額支付，只結算了桌面上的部分。",
+  thPlayer:"玩家", thHand:"本局", thBank:"籌碼", landlordCol:" · 地主",
+  stakeNext:"下一局的底注：", resetBank:"重置籌碼", nextDeal:"下一局",
+  rebuy:"買入 {0}", outChips:"你的籌碼輸光了，買入後可繼續。",
+  waitDealer:"等待房主開始下一局…",
+  outTitle:"籌碼輸光", outSub:"你的籌碼為零。",
+  outBody:"重新買入 <b>{0}</b> 籌碼繼續玩。",
+  modeAiT:"和電腦玩", modeAiD:"你一個座位，電腦兩個。離線可玩，無需設定。",
+  modeOnT:"和朋友玩", modeOnD:"產生連結發給朋友。空位由電腦補上。",
+  howTo:"玩法說明", yourBank:"你的籌碼 <b>{0}</b>",
+  yourTable:"你的牌桌", joiningTable:"正在加入牌桌",
+  tableIs:"房間 <b>{0}</b> · 空位由電腦補上。",
+  copy:"複製", copied:"已複製", leave:"離開", deal:"發牌",
+  tagYou:"你", tagJoined:"已加入", tagBot:"電腦",
+  hostNote:"把連結發給其他玩家。他們要能連到這台電腦 — 同一個 wifi 通常就夠了。",
+  waitStart:"等待房主發牌…",
+  fullT:"牌桌已滿", fullB:"這張牌桌的三個座位都有人了。",
+  closedT:"牌桌已關閉", closedB:"房主斷開了連線，本桌結束。",
+  backMenu:"返回主頁",
+  srvT:"和朋友玩需要啟動伺服器",
+  srvSub:"這個頁面是直接從檔案開啟的，沒有可以分享的網址。",
+  srvB1:"在終端機裡，進入遊戲所在的資料夾執行：",
+  srvB2:"它會顯示一個位址，例如 <code>http://192.168.1.20:8080</code>。開啟它，選擇<b>和朋友玩</b>，就會得到可以分享的連結。能連到你這台電腦的人都可以加入 — 同一個 wifi 通常就夠了。要跨網路玩，請在該連接埠前加一層內網穿透。",
+  gotIt:"知道了"
+}
+};
+var FELTS = {
+  green:    ["#17734a","#0f5132","#083d24","#0a2e1c"],
+  blue:     ["#17557a","#0f3f63","#082c47","#071f33"],
+  burgundy: ["#7a2b34","#5e1f28","#43151c","#2e0e13"],
+  slate:    ["#3b4a57","#2b3742","#1d262e","#141a20"],
+  purple:   ["#543b7a","#3f2c5e","#2b1d42","#1d142e"]
+};
+var CARD_SIZES = {s:[56,80,-26], m:[64,92,-30], l:[78,112,-38]};
+var PREFS = {diff:"normal", cardSize:"m", felt:"green", music:true, sfx:true};
+try {
+  var savedPrefs = JSON.parse(localStorage.getItem("ddz-prefs") || "null");
+  if (savedPrefs){
+    if (DIFFOK(savedPrefs.diff)) PREFS.diff = savedPrefs.diff;
+    if (CARD_SIZES[savedPrefs.cardSize]) PREFS.cardSize = savedPrefs.cardSize;
+    if (FELTS[savedPrefs.felt]) PREFS.felt = savedPrefs.felt;
+    if (typeof savedPrefs.music === "boolean") PREFS.music = savedPrefs.music;
+    if (typeof savedPrefs.sfx === "boolean") PREFS.sfx = savedPrefs.sfx;
+  }
+} catch(e){}
+function DIFFOK(d){ return d === "easy" || d === "normal" || d === "hard" || d === "impossible"; }
+function savePrefs(){
+  try { localStorage.setItem("ddz-prefs", JSON.stringify(PREFS)); } catch(e){}
+}
+function applyPrefs(){
+  var r = document.documentElement.style;
+  var f = FELTS[PREFS.felt] || FELTS.green;
+  r.setProperty("--feltGlow", f[0]);
+  r.setProperty("--felt1", f[1]);
+  r.setProperty("--felt2", f[2]);
+  r.setProperty("--felt3", f[3]);
+  var c = CARD_SIZES[PREFS.cardSize] || CARD_SIZES.m;
+  r.setProperty("--card-w", c[0] + "px");
+  r.setProperty("--card-h", c[1] + "px");
+  r.setProperty("--hand-ov", c[2] + "px");
+}
+var LANG = "en";
+try {
+  var savedLang = localStorage.getItem("ddz-lang");
+  if (savedLang && STR[savedLang]) LANG = savedLang;
+  else {
+    var nav = (navigator.language || "en").toLowerCase();
+    if (nav.indexOf("zh") === 0) LANG = (nav.indexOf("tw") > 0 || nav.indexOf("hk") > 0 || nav.indexOf("hant") > 0) ? "zhT" : "zh";
+    else if (nav.indexOf("es") === 0) LANG = "es";
+  }
+} catch(e){}
+function t(key){
+  var pack = STR[LANG] || STR.en;
+  var v = pack[key];
+  if (v === undefined) v = STR.en[key];
+  if (v === undefined) return key;
+  for (var i = 1; i < arguments.length; i++) v = v.split("{" + (i-1) + "}").join(arguments[i]);
+  return v;
+}
+
+var NAMES = ["You","East","West"];
+/* screen slots: 0 = the local player (bottom), 1 = right seat, 2 = left seat */
+function playerAt(slot){ return (G.me + slot) % 3; }
+function slotOf(p){ return (p - G.me + 3) % 3; }
+var uid = 0;
+
+function makeDeck(){
+  var d = [], r, s;
+  for (r = 3; r <= 15; r++) for (s = 0; s < 4; s++) d.push({id:uid++, rank:r, suit:s});
+  d.push({id:uid++, rank:16, suit:-1});   // black joker
+  d.push({id:uid++, rank:17, suit:-1});   // red joker
+  return d;
+}
+function shuffle(a){
+  for (var i = a.length - 1; i > 0; i--){
+    var j = Math.floor(Math.random() * (i + 1));
+    var t = a[i]; a[i] = a[j]; a[j] = t;
+  }
+  return a;
+}
+function sortHand(h){ h.sort(function(a,b){ return b.rank - a.rank || a.suit - b.suit; }); }
+
+/* ---------------- combination parsing ---------------- */
+function counts(cards){
+  var m = new Map(), i;
+  for (i = 0; i < cards.length; i++) m.set(cards[i].rank, (m.get(cards[i].rank) || 0) + 1);
+  return m;
+}
+function consecutive(arr){
+  for (var i = 1; i < arr.length; i++) if (arr[i] !== arr[i-1] + 1) return false;
+  return true;
+}
+/* returns {type, rank, len, size} or null if the set is not a legal play */
+function parseCombo(cards){
+  var n = cards.length;
+  if (!n) return null;
+  var m = counts(cards);
+  var ranks = Array.from(m.keys()).sort(function(a,b){ return a - b; });
+  var by = {1:[],2:[],3:[],4:[]}, i, r, c;
+  for (i = 0; i < ranks.length; i++){
+    r = ranks[i]; c = m.get(r);
+    if (c > 4) return null;
+    by[c].push(r);
+  }
+  var hi = ranks[ranks.length - 1];
+  var bothJokers = m.has(16) && m.has(17);
+
+  if (n === 2 && bothJokers) return {type:"rocket", rank:100, len:1, size:2};
+  if (n === 1) return {type:"single", rank:ranks[0], len:1, size:1};
+  if (n === 2 && by[2].length === 1) return {type:"pair", rank:ranks[0], len:1, size:2};
+  if (n === 3 && by[3].length === 1) return {type:"triple", rank:ranks[0], len:1, size:3};
+  if (n === 4 && by[4].length === 1) return {type:"bomb", rank:ranks[0], len:1, size:4};
+  if (n === 4 && by[3].length === 1 && by[1].length === 1) return {type:"triple1", rank:by[3][0], len:1, size:4};
+  if (n === 5 && by[3].length === 1 && by[2].length === 1) return {type:"triple2", rank:by[3][0], len:1, size:5};
+
+  /* quadplex sets — quad + two distinct singles, or quad + two distinct pairs */
+  if (by[4].length === 1){
+    if (n === 6 && by[1].length === 2 && !bothJokers) return {type:"quad1", rank:by[4][0], len:1, size:6};
+    if (n === 8 && by[2].length === 2) return {type:"quad2", rank:by[4][0], len:1, size:8};
+  }
+
+  /* pure sequences — 3..A only, no 2s or jokers */
+  if (hi <= 14 && consecutive(ranks)){
+    if (n >= 5 && by[1].length === ranks.length)
+      return {type:"straight", rank:hi, len:ranks.length, size:n};
+    if (ranks.length >= 3 && by[2].length === ranks.length)
+      return {type:"pairseq", rank:hi, len:ranks.length, size:n};
+    if (ranks.length >= 2 && by[3].length === ranks.length)
+      return {type:"tripseq", rank:hi, len:ranks.length, size:n};
+  }
+
+  /* airplanes with attachments */
+  if (by[3].length >= 2 && by[4].length === 0){
+    var trips = by[3], k = trips.length;
+    if (trips[k-1] <= 14 && consecutive(trips)){
+      var thi = trips[k-1];
+      if (n === 4 * k && !bothJokers && by[1].length + by[2].length * 2 === k)
+        return {type:"plane1", rank:thi, len:k, size:n};
+      if (n === 5 * k && by[1].length === 0 && by[2].length === k)
+        return {type:"plane2", rank:thi, len:k, size:n};
+    }
+  }
+  return null;
+}
+/* does combo a beat combo b?  b === null means a free lead */
+function beats(a, b){
+  if (!a) return false;
+  if (!b) return true;
+  if (a.type === "rocket") return b.type !== "rocket";
+  if (b.type === "rocket") return false;
+  if (a.type === "bomb" && b.type === "bomb") return a.rank > b.rank;
+  if (a.type === "bomb") return true;
+  if (b.type === "bomb") return false;
+  return a.type === b.type && a.len === b.len && a.size === b.size && a.rank > b.rank;
+}
+
+/* ---------------- move generation ---------------- */
+function rankGroups(hand){
+  var m = new Map(), i, c;
+  for (i = 0; i < hand.length; i++){
+    c = hand[i];
+    if (!m.has(c.rank)) m.set(c.rank, []);
+    m.get(c.rank).push(c);
+  }
+  return m;
+}
+function runsOf(list, len, cb){
+  for (var i = 0; i + len <= list.length; i++){
+    var ok = true;
+    for (var j = 1; j < len; j++) if (list[i+j] !== list[i+j-1] + 1){ ok = false; break; }
+    if (ok) cb(list.slice(i, i + len));
+  }
+}
+/* cheapest k loose cards, max 2 per rank, never both jokers */
+function pickSingles(g, ex, k){
+  var pool = [];
+  g.forEach(function(cs, r){
+    if (ex.has(r)) return;
+    var take = Math.min(cs.length, 2), i;
+    for (i = 0; i < take; i++) pool.push({c:cs[i], r:r, cost:cs.length * 100 + r + i * 0.1});
+  });
+  pool.sort(function(a,b){ return a.cost - b.cost; });
+  var res = [], j16 = false, j17 = false, x;
+  for (var i = 0; i < pool.length && res.length < k; i++){
+    x = pool[i];
+    if (x.r === 16){ if (j17) continue; j16 = true; }
+    if (x.r === 17){ if (j16) continue; j17 = true; }
+    res.push(x.c);
+  }
+  return res.length === k ? res : null;
+}
+/* cheapest k pairs of distinct ranks */
+function pickPairs(g, ex, k){
+  var pool = [];
+  g.forEach(function(cs, r){
+    if (ex.has(r) || cs.length < 2 || r >= 16) return;
+    pool.push({cs:cs.slice(0,2), cost:cs.length * 100 + r});
+  });
+  pool.sort(function(a,b){ return a.cost - b.cost; });
+  if (pool.length < k) return null;
+  var res = [];
+  for (var i = 0; i < k; i++) res = res.concat(pool[i].cs);
+  return res;
+}
+/* every reasonable play available from a hand */
+function genCandidates(hand){
+  var out = [], g = rankGroups(hand);
+  var ranks = Array.from(g.keys()).sort(function(a,b){ return a - b; });
+  function add(cs){ if (cs && cs.length && parseCombo(cs)) out.push(cs); }
+
+  ranks.forEach(function(r){
+    var cs = g.get(r);
+    add([cs[0]]);
+    if (cs.length >= 2) add(cs.slice(0,2));
+    if (cs.length >= 3) add(cs.slice(0,3));
+    if (cs.length >= 4) add(cs.slice(0,4));
+  });
+  if (g.has(16) && g.has(17)) add([g.get(16)[0], g.get(17)[0]]);
+
+  ranks.forEach(function(r){
+    var cs = g.get(r), ex = new Set([r]), a;
+    if (cs.length >= 3){
+      a = pickSingles(g, ex, 1); if (a) add(cs.slice(0,3).concat(a));
+      a = pickPairs(g, ex, 1);   if (a) add(cs.slice(0,3).concat(a));
+    }
+    if (cs.length === 4){
+      a = pickSingles(g, ex, 2); if (a) add(cs.slice(0,4).concat(a));
+      a = pickPairs(g, ex, 2);   if (a) add(cs.slice(0,4).concat(a));
+    }
+  });
+
+  var seq1 = ranks.filter(function(r){ return r <= 14; });
+  var seq2 = seq1.filter(function(r){ return g.get(r).length >= 2; });
+  var seq3 = seq1.filter(function(r){ return g.get(r).length >= 3; });
+  var L;
+  for (L = 5; L <= 12; L++) runsOf(seq1, L, function(run){
+    add(run.map(function(r){ return g.get(r)[0]; }));
+  });
+  for (L = 3; L <= 10; L++) runsOf(seq2, L, function(run){
+    var cs = []; run.forEach(function(r){ cs = cs.concat(g.get(r).slice(0,2)); }); add(cs);
+  });
+  for (L = 2; L <= 6; L++) runsOf(seq3, L, function(run){
+    var core = [];
+    run.forEach(function(r){ core = core.concat(g.get(r).slice(0,3)); });
+    add(core);
+    var ex = new Set(run), a;
+    a = pickSingles(g, ex, run.length); if (a) add(core.concat(a));
+    a = pickPairs(g, ex, run.length);   if (a) add(core.concat(a));
+  });
+
+  if (parseCombo(hand)) out.push(hand.slice());   /* going out in one shot */
+  return out;
+}
+function genBeating(hand, last){
+  return genCandidates(hand).filter(function(cs){ return beats(parseCombo(cs), last); });
+}
+/* lower is better: cheap, low, keeps the hand intact */
+function moveCost(cards, hand){
+  var cb = parseCombo(cards), g = rankGroups(hand);
+  var used = new Map(), i, pen = 0;
+  for (i = 0; i < cards.length; i++) used.set(cards[i].rank, (used.get(cards[i].rank) || 0) + 1);
+  used.forEach(function(n, r){
+    var have = g.get(r).length;
+    if (n < have) pen += have === 4 ? 30 : (have === 3 ? 6 : 4);
+  });
+  if (g.has(16) && g.has(17) && (used.has(16) !== used.has(17))) pen += 25;
+  var base = cb.rank;
+  if (cb.type === "bomb") base += 50;
+  if (cb.type === "rocket") base += 80;
+  return base + pen - cards.length * 0.8;
+}
+
+/* ---------------- game state ---------------- */
+var G = {
+  hands:[[],[],[]], kitty:[], landlord:-1, turn:0,
+  last:null,            /* {combo, cards, player} — current trick's best */
+  passes:0, bid:0, multiplier:1, bombs:0, spring:true,
+  plays:[0,0,0], display:[null,null,null],
+  chips:[0,0,0], base:10, handBase:10, seen:{},
+  me:0, humans:[true,false,false], epoch:0, mode:"ai", names:[null,null,null],
+  phase:"idle", auction:null, sel:new Set(), hintIdx:0, hintList:null
+};
+/* How long the table holds still, in ms, so you can actually read what was played. */
+/* Two separate things: `think` is the bot's deliberation pause (dead time — keep it
+   short), while afterPlay/trickEnd are how long a played card stays up to be read.
+   Cutting the first without gutting the second keeps the table legible but snappy. */
+var PACE = {afterPlay:1250, afterPass:700, trickEnd:1700, beforeResult:1200, think:240, thinkJitter:220};
+var START_CHIPS = 1000;                 /* a fresh stack */
+var STAKES = [5, 10, 25, 50, 100];      /* chips per scoring point */
+G.chips = [START_CHIPS, START_CHIPS, START_CHIPS];
+try {
+  var saved = JSON.parse(localStorage.getItem("ddz-bank") || "null");
+  if (saved && saved.chips && saved.chips.length === 3){
+    G.chips = saved.chips;
+    if (STAKES.indexOf(saved.base) >= 0) G.base = saved.base;
+  }
+} catch(e){}
+G.handBase = G.base;
+/* Every deal opens a new epoch. Timers scheduled in an old epoch are dead on arrival,
+   so a stale AI turn can never fire into a fresh hand and play someone else's cards. */
+function later(fn, ms){
+  var e = G.epoch;
+  return setTimeout(function(){ if (e === G.epoch) fn(); }, ms);
+}
+function isHuman(p){ return !!G.humans[p]; }
+function saveBank(){
+  try { localStorage.setItem("ddz-bank", JSON.stringify({chips:G.chips, base:G.base})); } catch(e){}
+}
+function fmt(n){ return (n || 0).toLocaleString("en-US"); }
+
+var $ = function(s){ return document.querySelector(s); };
+function log(html){
+  var d = document.createElement("div");
+  d.innerHTML = html;
+  $("#log").prepend(d);
+  while ($("#log").children.length > 30) $("#log").lastChild.remove();
+}
+var SEATKEY = ["you","east","west"];
+function comboName(type){ return t("c_" + type); }
+function pname(p){ return p === G.me ? t("you") : (G.names[p] || t(SEATKEY[slotOf(p)])); }
+
+/* ---------------- rendering ---------------- */
+function cardEl(c, cls){
+  var el = document.createElement("div");
+  el.className = "card " + (cls || "");
+  if (c.rank >= 16){
+    el.classList.add("joker", c.rank === 17 ? "red" : "black");
+    el.innerHTML = '<div class="corner"><span class="r">' + R_NAME[c.rank] +
+                   '</span><span class="s">王</span></div><div class="jk">JOKER</div>';
+  } else {
+    var su = SUIT[c.suit];
+    el.classList.add(su.c);
+    el.innerHTML = '<div class="corner"><span class="r">' + R_NAME[c.rank] +
+                   '</span><span class="s">' + su.g + '</span></div><div class="big">' + su.g + '</div>';
+  }
+  el.dataset.id = c.id;
+  return el;
+}
+function renderSeat(slot){
+  var p = playerAt(slot), seat = $("#seat" + slot), n = G.hands[p].length;
+  seat.querySelector(".pname").textContent = G.names[p] || t(SEATKEY[slot]);
+  seat.querySelector(".handcount b").textContent = n;
+  var fan = seat.querySelector(".backfan"), want = Math.min(n, 10);
+  if (fan.dataset.n !== String(want)){
+    fan.dataset.n = String(want);
+    fan.innerHTML = "";
+    for (var i = 0; i < want; i++) fan.appendChild(document.createElement("i"));
+  }
+  var badge = seat.querySelector(".badge");
+  if (G.landlord === p){ badge.style.display = ""; badge.textContent = t("landlordTag"); }
+  else badge.style.display = "none";
+  seat.classList.toggle("active", G.turn === p && (G.phase === "play" || G.phase === "auction"));
+}
+/* the centre of the table always holds the most recent play — the one to beat */
+var boardSig = null;
+function renderBoard(){
+  var b = $("#board");
+  /* render() runs on every state change; rebuilding identical cards would replay the
+     deal-in animation each time and read as a flicker. Only touch the DOM on a change. */
+  var sig = G.last ? G.last.player + ":" + G.last.cards.map(function(c){ return c.id; }).join(",") : "";
+  if (sig === boardSig) return;
+  boardSig = sig;
+  b.innerHTML = "";
+  if (!G.last) return;
+  var who = document.createElement("div");
+  who.className = "who";
+  who.textContent = (G.last.player === G.me ? t("playedYou") : t("playedX", pname(G.last.player)));
+  var wrap = document.createElement("div");
+  wrap.className = "cards";
+  var cs = G.last.cards.slice();
+  cs.sort(function(a,b){ return b.rank - a.rank || a.suit - b.suit; });
+  cs.forEach(function(c, i){
+    var e = cardEl(c, "small");
+    e.style.animationDelay = (i * 22) + "ms";
+    wrap.appendChild(e);
+  });
+  b.appendChild(who);
+  b.appendChild(wrap);
+}
+/* whoever passed this trick is marked at their own seat */
+function renderPasses(){
+  [1,2].forEach(function(slot){
+    $("#seat" + slot).querySelector(".seatpass").style.display =
+      G.display[playerAt(slot)] === "pass" ? "" : "none";
+  });
+  $("#passme").style.display = G.display[G.me] === "pass" ? "" : "none";
+}
+/* A 20-card landlord hand at the large card size is wider than a laptop window, and
+   the body does not scroll, so the ends were simply unreachable. Tighten the fan just
+   enough to fit — the cards keep the size you chose, they only tuck further under each
+   other, and only when they have to. */
+function fitHand(){
+  var h = $("#hand"), wrap = $("#handwrap"), n = h.children.length;
+  if (!n) return;
+  var root = getComputedStyle(document.documentElement);
+  var cw    = parseFloat(root.getPropertyValue("--card-w")) || 64;
+  var prefOv= parseFloat(root.getPropertyValue("--hand-ov")) || -30;
+  var prefVis = cw + prefOv;                       /* visible sliver at your chosen overlap */
+  var avail = wrap.clientWidth - 24;               /* leave the wrapper's padding alone */
+  var vis = prefVis;
+  if (n > 1){
+    var fit = (avail - cw) / (n - 1);
+    /* seeing every card beats a comfortable sliver, so the fit wins on narrow screens */
+    vis = Math.min(prefVis, Math.max(fit, 8));
+  }
+  h.style.setProperty("--hand-ov", (vis - cw) + "px");
+}
+var handSig = null;
+function renderHand(){
+  var h = $("#hand");
+  h.classList.toggle("locked", G.phase !== "play" || G.turn !== G.me);
+  var cards = G.hands[G.me] || [];
+  var sig = cards.map(function(c){ return c ? c.id : "?"; }).join(",");
+  if (sig !== handSig){
+    handSig = sig;
+    h.innerHTML = "";
+    cards.forEach(function(c){
+      var e = cardEl(c);
+      e.addEventListener("click", function(){ toggleCard(c.id); });
+      h.appendChild(e);
+    });
+  }
+  /* selection is only ever a class flip, so picking cards never rebuilds the fan */
+  [].forEach.call(h.children, function(el){
+    el.classList.toggle("sel", G.sel.has(+el.dataset.id));
+  });
+  fitHand();
+}
+function renderKitty(){
+  /* the three stay face down all round — the landlord takes them without showing
+     the other players, so the values never reach the DOM at all */
+  var k = $("#kittycards"), i;
+  if (k.dataset.n === String(G.kitty.length)) return;
+  k.dataset.n = String(G.kitty.length);
+  k.innerHTML = "";
+  for (i = 0; i < G.kitty.length; i++){
+    var el = document.createElement("div");
+    el.className = "card mini facedown";
+    k.appendChild(el);
+  }
+}
+function renderMoney(){
+  $("#bankchip").innerHTML = t("you") + " <b>" + fmt(G.chips[G.me]) + "</b> · " +
+    pname(playerAt(1)) + " <b>" + fmt(G.chips[playerAt(1)]) + "</b> · " +
+    pname(playerAt(2)) + " <b>" + fmt(G.chips[playerAt(2)]) + "</b>";
+  var el = $("#stakechip");
+  if (G.bid){
+    var per  = G.bid * G.multiplier * G.handBase;              /* chips per opponent, so far */
+    var risk = (G.landlord === G.me ? 2 * per : per);          /* the landlord settles with both */
+    el.innerHTML = t("exposure", G.handBase, G.bid,
+      (G.multiplier > 1 ? " × " + G.multiplier + "×" : ""), fmt(per), fmt(risk));
+  } else {
+    el.innerHTML = t("basePt", G.handBase);
+  }
+  var sel = $("#stakesel");
+  if (sel && +sel.value !== G.base) sel.value = G.base;
+}
+function initStakePicker(){
+  var sel = $("#stakesel");
+  sel.innerHTML = STAKES.map(function(v){
+    return '<option value="' + v + '">' + t("perPt", v) + "</option>";
+  }).join("");
+  sel.value = G.base;
+  sel.addEventListener("change", function(){
+    G.base = +sel.value;
+    saveBank();
+    if (G.phase === "idle" || G.phase === "over") G.handBase = G.base;
+    renderMoney();
+  });
+}
+function setStatus(html){ $("#status").innerHTML = html || ""; }
+function think(p, txt){ if (p > 0) $("#seat" + p).querySelector(".thinking").textContent = txt || ""; }
+
+function render(){
+  renderSeat(1); renderSeat(2);
+  renderBoard(); renderPasses();
+  renderHand(); renderKitty(); renderMoney(); renderControls(); renderComboLabel();
+  broadcastSoon();
+}
+
+/* ---------------- controls ---------------- */
+function btn(label, cls, fn, dis){
+  var b = document.createElement("button");
+  b.textContent = label;
+  if (cls) b.className = cls;
+  b.disabled = !!dis;
+  b.addEventListener("click", fn);
+  return b;
+}
+function renderControls(){
+  var c = $("#controls");
+  c.innerHTML = "";
+  if (G.phase === "auction" && G.turn === G.me){
+    var hi = G.auction.high;
+    c.appendChild(btn(t("pass"), "", function(){ humanBid(0); }));
+    [1,2,3].forEach(function(v){
+      c.appendChild(btn(t("bid", v), v === 3 ? "gold" : "", function(){ humanBid(v); }, v <= hi));
+    });
+    return;
+  }
+  if (G.phase === "play" && G.turn === G.me){
+    var free = !G.last;
+    var sel = selectedCards();
+    var cb = parseCombo(sel);
+    var ok = sel.length > 0 && cb && (free ? true : beats(cb, G.last.combo));
+    c.appendChild(btn(t("pass"), "", doHumanPass, free));
+    c.appendChild(btn(t("hint"), "", hint));
+    c.appendChild(btn(t("clear"), "", function(){ G.sel.clear(); G.hintList = null; render(); }, !sel.length));
+    c.appendChild(btn(t("play"), "gold", doHumanPlay, !ok));
+  }
+}
+function renderComboLabel(){
+  var el = $("#combolabel");
+  var sel = selectedCards();
+  if (G.phase !== "play" || G.turn !== G.me || !sel.length){ el.textContent = ""; el.className = ""; return; }
+  var cb = parseCombo(sel);
+  if (!cb){ el.textContent = t("notLegal"); el.className = "bad"; return; }
+  if (G.last && !beats(cb, G.last.combo)){
+    el.textContent = t("noBeat", comboName(cb.type), comboName(G.last.combo.type));
+    el.className = "bad";
+    return;
+  }
+  el.textContent = comboName(cb.type);
+  el.className = "";
+}
+function selectedCards(){
+  return G.hands[G.me].filter(function(c){ return G.sel.has(c.id); });
+}
+function toggleCard(id){
+  if (G.phase !== "play" || G.turn !== G.me) return;
+  if (G.sel.has(id)) G.sel.delete(id); else G.sel.add(id);
+  G.hintList = null;
+  render();
+}
+
+/* ---------------- dealing & auction ---------------- */
+function newRound(){
+  G.epoch++;
+  musicSet("play");
+  boardSig = handSig = null;                 /* force a clean redraw for the new hand */                       /* retire every timer still in flight from the last hand */
+  /* the opponents always come back with a fresh stack; you choose when to rebuy */
+  [1,2].forEach(function(i){
+    if (G.chips[i] <= 0){
+      G.chips[i] = START_CHIPS;
+      log(t("logRebuy", pname(i), fmt(START_CHIPS)));
+    }
+  });
+  if (G.chips[G.me] <= 0) return showRebuy();
+  G.handBase = G.base;            /* the stake is locked in for this hand */
+  saveBank();
+  var deck = shuffle(makeDeck());
+  G.hands = [deck.slice(0,17), deck.slice(17,34), deck.slice(34,51)];
+  G.kitty = deck.slice(51,54);
+  G.hands.forEach(sortHand);
+  G.landlord = -1; G.last = null; G.passes = 0; G.bid = 0;
+  G.multiplier = 1; G.bombs = 0; G.spring = true;
+  G.plays = [0,0,0]; G.display = [null,null,null];
+  G.seen = {}; G.myBombs = 0; G.myRocket = false; G.myPasses = 0; G.myJokers = {}; G.prevCombo = null;
+  G.chipsAtDeal = G.chips[G.me];
+  achBump("hands100");
+  achBump("hands500");
+  G.sel.clear(); G.hintList = null;
+  G.phase = "auction";
+  G.auction = {high:0, highBidder:-1, passes:0, seen:0};
+  G.turn = Math.floor(Math.random() * 3);
+  log(G.turn === G.me ? t("logDealYou") : t("logDealX", pname(G.turn)));
+  render();
+  nextBid();
+}
+function nextBid(){
+  G.phase = "auction";
+  render();
+  if (isHuman(G.turn) && G.turn !== G.me){
+    setStatus('<div class="big">' + pname(G.turn) + "</div>" + t("bidding"));
+  } else if (isHuman(G.turn)){
+    setStatus('<div class="big">' + t("yourBid") + "</div>" +
+      (G.auction.high ? t("highest", G.auction.high) : t("noBids")));
+  } else {
+    setStatus('<div class="big">' + t("auction") + "</div>" + pname(G.turn) + " · " + t("bidding"));
+    think(G.turn, t("thinking"));
+    later(function(){
+      think(G.turn, "");
+      aiBid(G.turn);
+    }, PACE.think + Math.random() * PACE.thinkJitter);
+  }
+}
+function handStrength(hand){
+  var g = rankGroups(hand), s = 0;
+  if (g.has(17)) s += 6.5;
+  if (g.has(16)) s += 5;
+  if (g.has(16) && g.has(17)) s += 4;
+  g.forEach(function(cs, r){
+    if (cs.length === 4) s += 8;
+    if (r === 15) s += 2.6 * cs.length;
+    if (r === 14) s += 1.3 * cs.length;
+  });
+  /* long runs are good, orphaned low singles are not */
+  var singles = 0;
+  g.forEach(function(cs, r){ if (cs.length === 1 && r <= 11) singles++; });
+  s -= singles * 0.75;
+  return s;
+}
+function aiBidValue(hand, p){
+  var s = handStrength(hand) - (diffFor(p === undefined ? 1 : p).bidBias);
+  return s >= 14 ? 3 : (s >= 9 ? 2 : (s >= 3 ? 1 : 0));
+}
+function aiBid(p){
+  if (G.phase !== "auction" || isHuman(p) || p !== G.turn) return;
+  var want = aiBidValue(G.hands[p], p);
+  var bid = want > G.auction.high ? want : 0;
+  applyBid(p, bid);
+}
+var bidIntent = false;
+function humanBid(v){
+  if (G.phase !== "auction" || G.turn !== G.me) return;
+  bidIntent = true;                 /* the only way a bid is ever entered for our seat */
+  try { localBid(v); } finally { bidIntent = false; }
+}
+function applyBid(p, bid){
+  if (p === G.me && G.mode !== "guest" && !bidIntent) return;   /* never bid on our behalf */
+  var a = G.auction;
+  a.seen++;
+  if (bid > a.high){
+    a.high = bid; a.highBidder = p; a.passes = 0;
+    log(p === G.me ? t("logBidYou", bid) : t("logBidX", pname(p), bid));
+  } else {
+    a.passes++;
+    log(p === G.me ? t("logPassYou") : t("logPassX", pname(p)));
+  }
+  if (a.high === 3 || (a.highBidder >= 0 && a.passes >= 2)){
+    return setLandlord(a.highBidder, a.high);
+  }
+  if (a.highBidder < 0 && a.seen >= 3){
+    setStatus('<div class="big">' + t("allPassed") + "</div>" + t("redealing"));
+    log(t("logThrownIn"));
+    return later(newRound, 1200);
+  }
+  G.turn = (G.turn + 1) % 3;
+  nextBid();
+}
+function setLandlord(p, bid){
+  G.landlord = p; G.bid = bid;
+  G.hands[p] = G.hands[p].concat(G.kitty);
+  sortHand(G.hands[p]);
+  log(p === G.me ? t("logLandlordYou", bid) : t("logLandlordX", pname(p), bid));
+  G.phase = "reveal";
+  G.turn = p;
+  render();
+  setStatus('<div class="big">' + (p === G.me ? t("youLandlord") : t("xLandlord", pname(p))) +
+            "</div>" + t("takesThree"));
+  later(startPlay, 1500);
+}
+
+/* ---------------- play ---------------- */
+function startPlay(){
+  G.phase = "play";
+  G.turn = G.landlord;
+  G.last = null;
+  G.passes = 0;
+  G.display = [null,null,null];
+  render();
+  turnLoop();
+}
+function turnLoop(){
+  render();
+  if (isHuman(G.turn) && G.turn !== G.me){
+    setStatus('<div class="big">' + pname(G.turn) + "</div>" + t("theirTurn"));
+  } else if (isHuman(G.turn)){
+    setStatus('<div class="big">' + t("yourTurn") + "</div>" +
+      (G.last ? t("beatThe", comboName(G.last.combo.type).replace(/^\S+\s/,"")) : t("youLead")));
+  } else {
+    setStatus('<div class="big">' + pname(G.turn) + "</div>" + t("thinking"));
+    think(G.turn, "…");
+    later(function(){
+      think(G.turn, "");
+      aiTurn(G.turn);
+    }, PACE.think + Math.random() * PACE.thinkJitter);
+  }
+}
+function isTeammate(a, b){ return a !== G.landlord && b !== G.landlord; }
+/* Difficulty is not cosmetic: each profile changes which move the bot picks.
+   easy  — dribbles cards out, misses chances to take a trick, hoards bombs
+   normal— the tidy shedding heuristic
+   hard  — same, plus it counts what has already gone and spends a high card
+           freely once that card can no longer be beaten */
+var DIFF = {
+  easy:   {slip:0.40, leadNoise:3, bombAt:1, calmLimit:13, pressLimit:18, shed:false, bidBias:4,  count:false},
+  normal: {slip:0,    leadNoise:0, bombAt:4, calmLimit:20, pressLimit:34, shed:true,  bidBias:0,  count:false},
+  hard:   {slip:0,    leadNoise:0, bombAt:6, calmLimit:27, pressLimit:44, shed:true,  bidBias:-2, count:true},
+  /* Impossible does not play a better hunch — it looks at the other hands. That is
+     what makes it impossible, and the settings screen says so plainly. */
+  impossible: {slip:0, leadNoise:0, bombAt:8, calmLimit:34, pressLimit:60, shed:true, bidBias:-4,
+               count:true, peek:true, search:true}
+};
+/* Playouts inside the search must use the plain policy, or they would search inside
+   the search. */
+var inPlayout = false;
+function diffFor(p){
+  if (inPlayout) return DIFF.hard;
+  return DIFF[PREFS.diff] || DIFF.normal;
+}
+
+/* ---------------- perfect-information search ----------------
+   Impossible already sees every hand, so the position is one of perfect information:
+   it can simply play the rest of the deal out and keep a line that wins. Every seat
+   in the playout follows the Hard policy, which is deterministic, so one playout per
+   candidate settles it — no sampling needed. */
+var SEARCH_CARDS = 54;      /* the whole deal is in scope … */
+var SEARCH_WIDTH = 14;      /* … but only this many candidates, best-first … */
+var SEARCH_MS = 10;         /* … and never longer than this, so a frame is never dropped */
+var searchDeadline = 0;
+function nowMs(){ return (window.performance && performance.now) ? performance.now() : Date.now(); }
+
+function playoutWinner(){
+  var guard = 0, p, hand, mv, ids, i;
+  while (guard++ < 300){
+    /* the search runs on the same thread that draws the table, so it yields the
+       moment it runs out of time and the ordinary heuristics take over */
+    if (nowMs() > searchDeadline) return -2;
+    p = G.turn; hand = G.hands[p];
+    mv = G.last ? aiFollow(p, hand) : aiLead(p, hand);
+    if (mv){
+      ids = {};
+      for (i = 0; i < mv.length; i++) ids[mv[i].id] = 1;
+      G.hands[p] = hand.filter(function(c){ return !ids[c.id]; });
+      G.last = {combo:parseCombo(mv), cards:mv, player:p};
+      G.passes = 0;
+      if (!G.hands[p].length) return p;
+    } else {
+      if (!G.last) return -1;                 /* a leader with no move cannot happen */
+      G.passes++;
+      if (G.passes >= 2){ G.last = null; G.passes = 0; }
+    }
+    G.turn = (G.turn + 1) % 3;
+  }
+  return -1;
+}
+function sideWins(p, winner){
+  if (winner < 0) return false;
+  return (p === G.landlord) ? (winner === G.landlord) : (winner !== G.landlord);
+}
+/* returns a candidate that wins the deal outright, or null.
+   `cands` is best-first; passing is offered as `null`. */
+function searchWin(p, cands, allowPass){
+  var total = G.hands[0].length + G.hands[1].length + G.hands[2].length;
+  if (total > SEARCH_CARDS) return undefined;          /* too early to be worth it */
+  var save = {h0:G.hands[0], h1:G.hands[1], h2:G.hands[2], turn:G.turn, last:G.last, passes:G.passes};
+  var landlord = G.landlord;
+  var list = cands.slice(0, SEARCH_WIDTH);
+  if (allowPass) list = list.concat([null]);
+  var found;
+  searchDeadline = nowMs() + SEARCH_MS;
+  inPlayout = true;
+  try {
+    for (var i = 0; i < list.length; i++){
+      if (nowMs() > searchDeadline) break;
+      var cs = list[i], winner;
+      G.hands = [save.h0, save.h1, save.h2];
+      G.turn = save.turn; G.last = save.last; G.passes = save.passes;
+      if (cs){
+        var ids = {};
+        for (var j = 0; j < cs.length; j++) ids[cs[j].id] = 1;
+        G.hands[p] = save["h" + p].filter(function(c){ return !ids[c.id]; });
+        G.last = {combo:parseCombo(cs), cards:cs, player:p};
+        G.passes = 0;
+        if (!G.hands[p].length){ winner = p; }
+        else { G.turn = (p + 1) % 3; winner = playoutWinner(); }
+      } else {
+        G.passes = save.passes + 1;
+        if (G.passes >= 2){ G.last = null; G.passes = 0; }
+        G.turn = (p + 1) % 3;
+        winner = playoutWinner();
+      }
+      if (sideWins(p, winner)){ found = cs; break; }
+    }
+  } catch(e){ found = undefined; }
+  inPlayout = false;
+  G.hands = [save.h0, save.h1, save.h2];
+  G.turn = save.turn; G.last = save.last; G.passes = save.passes;
+  G.landlord = landlord;
+  return found;
+}
+
+/* ---- perfect information, used only by the Impossible profile ---- */
+var peek = {key:"", combos:[null,null,null]};
+function peekKey(){
+  return G.epoch + ":" + G.hands[0].length + "," + G.hands[1].length + "," + G.hands[2].length;
+}
+/* every combination a seat could currently play, parsed once per decision */
+function peekCombos(o){
+  var k = peekKey();
+  if (peek.key !== k){ peek.key = k; peek.combos = [null,null,null]; }
+  if (!peek.combos[o]){
+    peek.combos[o] = genCandidates(G.hands[o]).map(parseCombo).filter(Boolean);
+  }
+  return peek.combos[o];
+}
+/* the seats actually trying to beat us — a peasant's partner is not one of them */
+function enemySeats(p){
+  var out = [], i;
+  for (i = 0; i < 3; i++){
+    if (i === p) continue;
+    if (p !== G.landlord && i !== G.landlord) continue;
+    out.push(i);
+  }
+  return out;
+}
+/* is a rival one play away from emptying their hand? */
+function enemyAboutToGoOut(p){
+  var es = enemySeats(p), k, h;
+  for (k = 0; k < es.length; k++){
+    h = G.hands[es[k]];
+    if (h.length && playsEstimate(h) <= 1) return true;
+  }
+  return false;
+}
+/* can anybody still answer this? */
+function enemyCanBeat(p, cb){
+  var es = enemySeats(p), k, combos, i;
+  for (k = 0; k < es.length; k++){
+    combos = peekCombos(es[k]);
+    for (i = 0; i < combos.length; i++) if (beats(combos[i], cb)) return true;
+  }
+  return false;
+}
+
+/* ranks already face up on the table this hand, so a counting bot knows what is left */
+function markSeen(cards){
+  for (var i = 0; i < cards.length; i++) G.seen[cards[i].rank] = (G.seen[cards[i].rank] || 0) + 1;
+}
+var RANK_TOTAL = {16:1, 17:1};
+(function(){ for (var r = 3; r <= 15; r++) RANK_TOTAL[r] = 4; })();
+/* highest rank still unaccounted for — not in our hand and not yet played */
+function unseenTop(hand){
+  var mine = {}, i, r;
+  for (i = 0; i < hand.length; i++) mine[hand[i].rank] = (mine[hand[i].rank] || 0) + 1;
+  for (r = 17; r >= 3; r--){
+    var left = (RANK_TOTAL[r] || 0) - (G.seen[r] || 0) - (mine[r] || 0);
+    if (left > 0) return r;
+  }
+  return 0;
+}
+
+/* how many cards the hand we fear still holds */
+function threat(p){
+  if (p === G.landlord){
+    var m = 99, i;
+    for (i = 0; i < 3; i++) if (i !== G.landlord) m = Math.min(m, G.hands[i].length);
+    return m;
+  }
+  return G.hands[G.landlord].length;
+}
+/* rough number of separate plays still needed to empty a hand — lower is better */
+function playsEstimate(hand){
+  var g = rankGroups(hand);
+  var singles = 0, pairs = 0, trips = 0, bombs = 0;
+  g.forEach(function(cs){
+    if (cs.length === 1) singles++;
+    else if (cs.length === 2) pairs++;
+    else if (cs.length === 3) trips++;
+    else bombs++;
+  });
+  var save = 0;
+  function runSave(list, minLen){
+    var run = 1, i;
+    for (i = 1; i <= list.length; i++){
+      if (i < list.length && list[i] === list[i-1] + 1) run++;
+      else { if (run >= minLen) save += run - 1; run = 1; }
+    }
+  }
+  var keys = Array.from(g.keys());
+  runSave(keys.filter(function(r){ return r <= 14 && g.get(r).length === 1; }).sort(function(a,b){return a-b;}), 5);
+  runSave(keys.filter(function(r){ return r <= 14 && g.get(r).length === 2; }).sort(function(a,b){return a-b;}), 3);
+  var n = singles + pairs + trips + bombs - save - Math.min(trips, singles + pairs);
+  return Math.max(1, n);
+}
+function afterPlay(hand, cards){
+  var rm = new Set(cards.map(function(c){ return c.id; }));
+  return hand.filter(function(c){ return !rm.has(c.id); });
+}
+/* prefer plays that leave a tidy hand, then cheap cards */
+function shedScore(cards, hand){
+  return playsEstimate(afterPlay(hand, cards)) * 6 + moveCost(cards, hand) * 0.35;
+}
+function aiTurn(p){
+  /* belt and braces: whatever scheduled this, a bot never touches a human's hand */
+  if (G.phase !== "play" || isHuman(p) || p !== G.turn) return;
+  var hand = G.hands[p], move;
+  if (!G.last){
+    playCards(p, aiLead(p, hand));
+  } else {
+    move = aiFollow(p, hand);
+    if (move) playCards(p, move); else passTurn(p);
+  }
+}
+function aiLead(p, hand){
+  var cands = genCandidates(hand), i, D = diffFor(p);
+  for (i = 0; i < cands.length; i++) if (cands[i].length === hand.length) return cands[i];
+  var urgent = threat(p) <= 2;
+  var scored = [];
+  cands.forEach(function(cs){
+    var ty = parseCombo(cs).type;
+    if (ty === "bomb" || ty === "rocket") return;
+    var sc = D.shed ? shedScore(cs, hand) : moveCost(cs, hand);
+    if (urgent && cs.length === 1) sc += 4;
+    if (urgent && cs.length > 1 && D.shed) sc -= 3;
+    scored.push({cs:cs, sc:sc});
+  });
+  if (!scored.length){
+    cands.sort(function(a,b){ return moveCost(a,hand) - moveCost(b,hand); });
+    return cands[0];
+  }
+  scored.sort(function(a,b){ return a.sc - b.sc; });
+
+  /* If we can see a line that wins the whole deal, play it — nothing else matters. */
+  if (D.search){
+    var won = searchWin(p, scored.map(function(x){ return x.cs; }), false);
+    if (won) return won;
+  }
+  /* Perfect information is a tiebreaker, not a licence to burn control cards on
+     tricks that do not matter. Winning the hand beats winning the trick. */
+  if (D.peek){
+    var i2, cs2, rest;
+    /* a guaranteed finish: seal this trick, then dump everything left next turn */
+    for (i2 = 0; i2 < scored.length; i2++){
+      cs2 = scored[i2].cs;
+      rest = afterPlay(hand, cs2);
+      if (rest.length && playsEstimate(rest) <= 1 && !enemyCanBeat(p, parseCombo(cs2))) return cs2;
+    }
+    /* and when somebody is one play from going out, deny them the lead outright.
+       Beyond these two cases, seeing the cards is NOT used to pick leads: chasing
+       tricks with high cards measurably loses more hands than it wins. */
+    if (enemyAboutToGoOut(p)){
+      var top = scored.slice(0, 8);        /* only the plausible leads are worth testing */
+      var block = top.filter(function(x){ return !enemyCanBeat(p, parseCombo(x.cs)); });
+      if (block.length) return block[0].cs;
+    }
+  }
+
+  /* Endgame block: an opponent holding n cards cannot answer a lead of more than n
+     cards, so leading wide denies them the trick outright. Only the counting bot
+     bothers to work this out. */
+  if (D.count){
+    var minOpp = threat(p);
+    if (minOpp <= 2){
+      var blocking = scored.filter(function(x){ return x.cs.length > minOpp; });
+      if (blocking.length) scored = blocking;
+    }
+  }
+  /* a weak bot does not reliably pick its best lead */
+  var pick = D.leadNoise ? Math.floor(Math.random() * Math.min(D.leadNoise, scored.length)) : 0;
+  return scored[pick].cs;
+}
+function aiFollow(p, hand){
+  var last = G.last, cands = genBeating(hand, last.combo), i;
+  if (!cands.length) return null;
+  for (i = 0; i < cands.length; i++) if (cands[i].length === hand.length) return cands[i];
+
+  /* never cut down your own partner unless you can go out */
+  if (p !== G.landlord && isTeammate(p, last.player)) return null;
+
+  var D = diffFor(p);
+  var opp = threat(p), urgent = opp <= 2, pressing = opp <= 7;
+  /* a weak bot simply misses chances to take the trick */
+  if (D.slip && Math.random() < D.slip) return null;
+
+  var plain = cands.filter(function(cs){
+    var ty = parseCombo(cs).type;
+    return ty !== "bomb" && ty !== "rocket";
+  });
+  var pool = plain.length ? plain : ((urgent || opp <= D.bombAt) ? cands : []);
+  if (!pool.length) return null;
+  pool.sort(function(a,b){
+    return (D.shed ? shedScore(a,hand) : moveCost(a,hand)) - (D.shed ? shedScore(b,hand) : moveCost(b,hand));
+  });
+  if (D.search){
+    var wonF = searchWin(p, pool, !!last);
+    if (wonF) return wonF;                    /* a winning answer */
+    if (wonF === null) return null;           /* passing is what wins here */
+  }
+  var pick = pool[0], cost = moveCost(pick, hand);
+  var limit = (urgent || hand.length <= 6) ? 1e9 : (pressing ? D.pressLimit : D.calmLimit);
+  /* counting bot: a card nothing left in the deck can beat is worth spending now */
+  if (D.count && cost > limit){
+    var cb2 = parseCombo(pick);
+    if ((cb2.type === "single" || cb2.type === "pair") && cb2.rank > unseenTop(hand)) limit = 1e9;
+  }
+  /* seeing the cards earns its keep here: if a rival can empty their hand next turn,
+     this trick is worth any price */
+  if (D.peek && enemyAboutToGoOut(p)) limit = 1e9;
+  if (cost > limit) return null;      /* otherwise hold the big guns */
+  return pick;
+}
+
+function playCards(p, cards){
+  var cb = parseCombo(cards);
+  G.prevCombo = G.last ? G.last.combo : null;   /* what this play is beating */
+  var ids = new Set(cards.map(function(c){ return c.id; }));
+  G.hands[p] = G.hands[p].filter(function(c){ return !ids.has(c.id); });
+  G.last = {combo:cb, cards:cards, player:p};
+  markSeen(cards);
+  G.passes = 0;
+  G.plays[p]++;
+  G.display[p] = cards.slice();
+  if (p === G.me) achOnPlay(cb, cards);
+  if (cb.type === "rocket") sfxRocket();
+  else if (cb.type === "bomb") sfxBomb();
+  else sfxCard(cards.length);
+  if (cb.type === "bomb" || cb.type === "rocket"){
+    G.bombs++;
+    G.multiplier *= 2;
+    log(t("logBomb", pname(p), comboName(cb.type)));
+  } else {
+    log(t("logMove", pname(p), comboName(cb.type)));
+  }
+  if (p === G.me){ G.sel.clear(); G.hintList = null; }
+  render();
+  if (p === G.me) setStatus("");
+  if (!G.hands[p].length) return later(function(){ endRound(p); }, PACE.beforeResult);
+  G.turn = (G.turn + 1) % 3;
+  later(turnLoop, PACE.afterPlay);
+}
+function passTurn(p){
+  if (p === G.me) G.myPasses = (G.myPasses || 0) + 1;
+  sfxPass();
+  G.passes++;
+  G.display[p] = "pass";
+  log(t("logPassShort", pname(p)));
+  render();
+  if (p === G.me) setStatus("");
+  if (G.passes >= 2){
+    G.last = null;
+    G.passes = 0;
+    G.display = [null,null,null];
+    G.turn = (G.turn + 1) % 3;
+    later(function(){
+      G.display = [null,null,null];
+      turnLoop();
+    }, PACE.trickEnd);
+    return;
+  }
+  G.turn = (G.turn + 1) % 3;
+  later(turnLoop, PACE.afterPass);
+}
+function doHumanPass(){
+  if (G.phase !== "play" || G.turn !== G.me || !G.last) return;
+  G.sel.clear(); G.hintList = null;
+  localPass();
+}
+function doHumanPlay(){
+  if (G.phase !== "play" || G.turn !== G.me) return;
+  var sel = selectedCards();
+  var cb = parseCombo(sel);
+  if (!cb) return;
+  if (G.last && !beats(cb, G.last.combo)) return;
+  localPlay(sel);
+}
+function hint(){
+  if (G.phase !== "play" || G.turn !== G.me) return;
+  if (!G.hintList){
+    var list = G.last ? genBeating(G.hands[G.me], G.last.combo) : genCandidates(G.hands[G.me]);
+    var seen = new Set();
+    list = list.filter(function(cs){
+      var key = cs.map(function(c){ return c.id; }).sort().join(",");
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+    list.sort(function(a,b){ return shedScore(a, G.hands[G.me]) - shedScore(b, G.hands[G.me]); });
+    G.hintList = list;
+    G.hintIdx = 0;
+  }
+  if (!G.hintList.length){
+    setStatus('<div class="big">No legal play</div>you must pass');
+    return;
+  }
+  var pick = G.hintList[G.hintIdx % G.hintList.length];
+  G.hintIdx++;
+  var keep = G.hintList, idx = G.hintIdx;
+  G.sel = new Set(pick.map(function(c){ return c.id; }));
+  render();
+  G.hintList = keep;
+  G.hintIdx = idx;
+}
+
+/* Local play routes through these two so online mode can send them over the wire instead. */
+function localPlay(cards){
+  if (G.mode === "guest"){
+    netSend({t:"act", kind:"play", ids: cards.map(function(c){ return c.id; })});
+    G.sel.clear(); G.hintList = null; render();
+    return;
+  }
+  playCards(G.me, cards);
+}
+function localPass(){
+  if (G.mode === "guest"){ netSend({t:"act", kind:"pass"}); render(); return; }
+  passTurn(G.me);
+}
+function localBid(v){
+  if (G.mode === "guest"){ netSend({t:"act", kind:"bid", v:v}); return; }
+  applyBid(G.me, v);
+}
+
+/* ---------------- scoring ---------------- */
+function endRound(winner){
+  G.phase = "over";
+  var landlordWon = winner === G.landlord;
+  var springTxt = "";
+  var mult = G.multiplier;
+  var peas = [0,1,2].filter(function(i){ return i !== G.landlord; });
+  if (landlordWon && G.plays[peas[0]] === 0 && G.plays[peas[1]] === 0){
+    mult *= 2; springTxt = t("spring");
+  }
+  if (!landlordWon && G.plays[G.landlord] === 1){
+    mult *= 2; springTxt = t("antiSpring");
+  }
+  var pts  = G.bid * mult;                 /* the score in points … */
+  var unit = pts * G.handBase;             /* … converted to chips, per opponent */
+  var delta = [0,0,0], i;
+
+  /* table stakes: nobody can pay more than they actually have in front of them */
+  var capped = false;
+  if (landlordWon){
+    peas.forEach(function(k){
+      var pay = Math.min(unit, G.chips[k]);
+      if (pay < unit) capped = true;
+      delta[k] -= pay;
+      delta[G.landlord] += pay;
+    });
+  } else {
+    var owed = Math.min(2 * unit, G.chips[G.landlord]);
+    if (owed < 2 * unit) capped = true;
+    var each = Math.floor(owed / 2), odd = owed - each * 2;
+    peas.forEach(function(k, n){
+      var get = each + (n === 0 ? odd : 0);
+      delta[k] += get;
+      delta[G.landlord] -= get;
+    });
+  }
+  for (i = 0; i < 3; i++) G.chips[i] += delta[i];
+  saveBank();
+
+  log(t("logOut", pname(winner), landlordWon ? t("llWins") : t("peaWins"), fmt(unit)));
+  render();
+
+  var result = {
+    winner:winner, landlord:G.landlord, bid:G.bid, multiplier:G.multiplier,
+    springTxt:springTxt, pts:pts, unit:unit, capped:capped,
+    delta:delta, chips:G.chips.slice(), handBase:G.handBase
+  };
+  if (G.mode === "host") netSend({t:"result", result:result});
+  showResult(result);
+  setStatus("");
+}
+
+/* Renders the settlement for whoever is looking at it — dealer, guest or solo — from
+   the same payload, so every seat sees the identical accounting. */
+function showResult(r){
+  G.phase = "over";
+  G.chips = r.chips.slice();
+  if (G.mode !== "guest") saveBank();
+  renderMoney();
+
+  var landlordWon = r.winner === r.landlord;
+  var youWon = landlordWon ? r.landlord === G.me : r.landlord !== G.me;
+  achOnResult(r, youWon);
+  var rows = [0,1,2].map(function(k){
+    return "<tr" + (k === G.me ? ' class="me"' : "") + "><td>" + pname(k) +
+      (k === r.landlord ? t("landlordCol") : "") + "</td><td class=\"" + (r.delta[k] >= 0 ? "pos" : "neg") + "\">" +
+      (r.delta[k] >= 0 ? "+" : "") + fmt(r.delta[k]) + "</td><td>" + fmt(r.chips[k]) + "</td></tr>";
+  }).join("");
+  var dealer = G.mode !== "guest";
+  var broke = dealer && G.chips[G.me] <= 0;
+  var stakeRow = '<div class="stakes">' + STAKES.map(function(v){
+    return '<button data-stake="' + v + '"' + (v === G.base ? ' class="on"' : "") + ">" + t("perPt", v) + "</button>";
+  }).join("") + "</div>";
+
+  showModal(
+    "<h2>" + (youWon ? t("win") : t("lose")) + "</h2>" +
+    '<div class="sub">' + (r.winner === G.me ? t("emptiedYou", pname(r.winner), landlordWon ? t("llTakes") : t("peaTakes"))
+                                             : t("emptiedX", pname(r.winner), landlordWon ? t("llTakes") : t("peaTakes"))) + "</div>" +
+    "<p>" + t("resultLine", r.bid, r.multiplier, (r.springTxt ? t("springX2") : ""), r.pts, r.handBase, fmt(r.unit)) +
+      (r.springTxt ? "<br><span style='color:#e8c46a'>" + r.springTxt + "</span>" : "") +
+      (r.capped ? "<br><span style='color:#e8c46a'>" + t("capped") + "</span>" : "") + "</p>" +
+    '<table class="tally"><tr><th>' + t("thPlayer") + "</th><th>" + t("thHand") + "</th><th>" + t("thBank") + "</th></tr>" + rows + "</table>" +
+    (broke ? '<div class="bust">' + t("outChips") + "</div>"
+           : dealer ? '<p style="margin-top:14px">' + t("stakeNext") + "</p>" + stakeRow
+                    : '<div class="sub" style="margin-top:14px">' + t("waitDealer") + "</div>") +
+    '<div class="row">' +
+    (dealer ? '<button class="ghost" id="mreset">' + t("resetBank") + "</button>" : "") +
+    (broke ? '<button class="gold" id="mrebuy">' + t("rebuy", fmt(START_CHIPS)) + "</button>"
+           : dealer ? '<button class="gold" id="mnext">' + t("nextDeal") + "</button>" : "") + "</div>",
+    function(){
+      [].forEach.call(document.querySelectorAll("#modal .stakes button"), function(b2){
+        b2.addEventListener("click", function(){
+          G.base = +b2.dataset.stake; saveBank();
+          [].forEach.call(document.querySelectorAll("#modal .stakes button"), function(o){
+            o.classList.toggle("on", o === b2);
+          });
+          renderMoney();
+        });
+      });
+      if ($("#mnext")) $("#mnext").addEventListener("click", function(){ hideModal(); newRound(); });
+      if ($("#mrebuy")) $("#mrebuy").addEventListener("click", function(){
+        achBump("rock_bottom");
+        G.chips[G.me] = START_CHIPS; saveBank(); hideModal(); newRound();
+      });
+      if ($("#mreset")) $("#mreset").addEventListener("click", function(){
+        G.chips = [START_CHIPS, START_CHIPS, START_CHIPS];
+        saveBank(); renderMoney(); hideModal(); newRound();
+      });
+    }
+  );
+  setStatus("");
+}
+
+function showRebuy(){
+  G.phase = "idle";
+  setStatus("");
+  showModal(
+    "<h2>" + t("outTitle") + "</h2>" +
+    '<div class="sub">' + t("outSub") + "</div>" +
+    "<p>" + t("outBody", fmt(START_CHIPS)) + "</p>" +
+    '<div class="row"><button class="gold" id="mrebuy2">' + t("rebuy", fmt(START_CHIPS)) + "</button></div>",
+    function(){
+      $("#mrebuy2").addEventListener("click", function(){
+        achBump("rock_bottom");
+        G.chips[G.me] = START_CHIPS; saveBank(); hideModal(); newRound();
+      });
+    }
+  );
+}
+
+/* ---------------- modal ---------------- */
+var homeWasOpen = false;
+function showModal(html, after){
+  /* Only sample this when no dialog is up: re-rendering a dialog must not forget
+     that the home screen is waiting underneath. */
+  if ($("#overlay").classList.contains("hidden")){
+    homeWasOpen = !$("#home").classList.contains("hidden");
+  }
+  if (homeWasOpen) $("#home").classList.add("hidden");
+  $("#modal").innerHTML = html;
+  $("#overlay").classList.remove("hidden");
+  if (after) after();
+}
+function hideModal(){
+  $("#overlay").classList.add("hidden");
+  if (homeWasOpen){
+    homeWasOpen = false;
+    $("#home").classList.remove("hidden");
+  }
+}
+
+var RULES_TXT = {
+en:
+  "<p><b>Ranking:</b> red joker &gt; black joker &gt; 2 &gt; A &gt; K &gt; Q &gt; J &gt; 10 &gt; … &gt; 3</p>" +
+  "<p><b>Auction:</b> bid 1, 2 or 3, or pass. The highest bidder becomes the landlord, takes the three face-down cards (20 in hand) and leads first. The bid is the base stake.</p>" +
+  "<p><b>Play:</b> beat the previous play with a higher combination of the same type and size, or pass. Two passes in a row end the trick and the last player leads again. First player with an empty hand wins — either peasant winning beats the landlord.</p>" +
+  "<p><b>Combinations:</b> single · pair · triple · triple with a single or a pair attached · straight of 5+ (3 to A, no 2s or jokers) · 3+ consecutive pairs · 2+ consecutive triples (airplane), each triple able to carry a single or a pair · quad plus two singles or two pairs · <b>bomb</b> (four of a kind) beats everything but a higher bomb or the rocket · <b>rocket</b> (both jokers) beats everything.</p>" +
+  "<p><b>Money:</b> everyone sits down with 1,000 chips. Pick a <b>stake</b> — chips per scoring point — before each deal. A hand settles at <i>bid × bomb multiplier × spring × stake</i>, paid by each opponent to the landlord or by the landlord to each of them. Every bomb and rocket doubles it; <b>spring</b> doubles it again if the peasants never play a card, or if the landlord plays only once. Play is table stakes.</p>",
+zh:
+  "<p><b>牌型大小：</b>大王 &gt; 小王 &gt; 2 &gt; A &gt; K &gt; Q &gt; J &gt; 10 &gt; … &gt; 3</p>" +
+  "<p><b>叫分：</b>可以叫 1、2、3 分或不叫。叫分最高的人当地主，拿走三张底牌（共 20 张）并先出牌。叫的分数就是底分。</p>" +
+  "<p><b>出牌：</b>用同类型、同张数但更大的牌压上家，或者不要。连续两家不要，这一轮结束，最后出牌的人重新领出。先出完牌的一方获胜 — 任意一个农民出完，农民方就赢。</p>" +
+  "<p><b>牌型：</b>单张 · 对子 · 三张 · 三带一 / 三带一对 · 五张以上的顺子（3 到 A，不含 2 和王）· 三对以上的连对 · 两个以上连续三张（飞机），每个三张可带一张或一对 · 四带二 / 四带两对 · <b>炸弹</b>（四张同点）大过除更大炸弹和王炸以外的一切 · <b>王炸</b>（双王）最大。</p>" +
+  "<p><b>筹码：</b>每人 1,000 筹码。每局发牌前选好<b>底注</b>（每分多少筹码）。结算为<i>叫分 × 炸弹翻倍 × 春天 × 底注</i>，由每个对手付给地主，或由地主付给每个对手。每出一个炸弹或王炸翻一倍；农民一张牌都没出上（春天），或地主只出了一手牌（反春天），再翻一倍。按桌上筹码结算。</p>",
+zhT:
+  "<p><b>牌型大小：</b>大王 &gt; 小王 &gt; 2 &gt; A &gt; K &gt; Q &gt; J &gt; 10 &gt; … &gt; 3</p>" +
+  "<p><b>叫分：</b>可以叫 1、2、3 分或不叫。叫分最高的人當地主，拿走三張底牌（共 20 張）並先出牌。叫的分數就是底分。</p>" +
+  "<p><b>出牌：</b>用同類型、同張數但更大的牌壓上家，或者不要。連續兩家不要，這一輪結束，最後出牌的人重新領出。先出完牌的一方獲勝 — 任一個農民出完，農民方就贏。</p>" +
+  "<p><b>牌型：</b>單張 · 對子 · 三張 · 三帶一 / 三帶一對 · 五張以上的順子（3 到 A，不含 2 和王）· 三對以上的連對 · 兩個以上連續三張（飛機），每個三張可帶一張或一對 · 四帶二 / 四帶兩對 · <b>炸彈</b>（四張同點）大過除更大炸彈和王炸以外的一切 · <b>王炸</b>（雙王）最大。</p>" +
+  "<p><b>籌碼：</b>每人 1,000 籌碼。每局發牌前選好<b>底注</b>（每分多少籌碼）。結算為<i>叫分 × 炸彈翻倍 × 春天 × 底注</i>，由每個對手付給地主，或由地主付給每個對手。每出一個炸彈或王炸翻一倍；農民一張牌都沒出上（春天），或地主只出了一手牌（反春天），再翻一倍。按桌上籌碼結算。</p>",
+es:
+  "<p><b>Orden:</b> comodín rojo &gt; comodín negro &gt; 2 &gt; A &gt; K &gt; Q &gt; J &gt; 10 &gt; … &gt; 3</p>" +
+  "<p><b>Subasta:</b> puja 1, 2 o 3, o pasa. Quien más puja es el terrateniente, toma las tres cartas tapadas (20 en mano) y sale primero. La puja es la apuesta base.</p>" +
+  "<p><b>Juego:</b> supera la jugada anterior con una combinación del mismo tipo y tamaño pero mayor, o pasa. Dos pasos seguidos cierran la baza y quien jugó último vuelve a salir. Gana quien se quede sin cartas — si lo logra cualquier campesino, ganan los campesinos.</p>" +
+  "<p><b>Combinaciones:</b> carta suelta · pareja · trío · trío con una suelta o una pareja · escalera de 5+ (3 a A, sin doses ni comodines) · 3+ parejas consecutivas · 2+ tríos consecutivos (avión), cada trío puede llevar una suelta o una pareja · cuarteto más dos sueltas o dos parejas · la <b>bomba</b> (cuatro iguales) supera todo salvo una bomba mayor o el cohete · el <b>cohete</b> (los dos comodines) lo supera todo.</p>" +
+  "<p><b>Dinero:</b> cada uno empieza con 1.000 fichas. Elige una <b>apuesta</b> — fichas por punto — antes de cada reparto. La mano se liquida como <i>puja × multiplicador de bombas × primavera × apuesta</i>, que cada rival paga al terrateniente o el terrateniente paga a cada uno. Cada bomba y cohete la dobla; la <b>primavera</b> la dobla otra vez si los campesinos no juegan ninguna carta, o si el terrateniente juega una sola vez. Se juega limitado a las fichas de la mesa.</p>"
+};
+function rulesHtml(){
+  return "<h2>" + (LANG.indexOf("zh") === 0 ? (LANG === "zhT" ? "鬥地主" : "斗地主") : "Dou Dizhu — 斗地主") + "</h2>" +
+    '<div class="sub">' + t("sub") + "</div>" +
+    (RULES_TXT[LANG] || RULES_TXT.en) +
+    '<div class="row"><button class="gold" id="mclose">' + t("gotIt") + "</button></div>";
+}
+var RULES_OLD =
+  "<h2>Dou Dizhu — 斗地主</h2>" +
+  '<div class="sub">One landlord against two peasants. 54 cards, no suits.</div>' +
+  "<p><b>Ranking:</b> red joker &gt; black joker &gt; 2 &gt; A &gt; K &gt; Q &gt; J &gt; 10 &gt; … &gt; 3</p>" +
+  "<p><b>Auction:</b> bid 1, 2 or 3, or pass. The highest bidder becomes the landlord, takes the three face-down cards (20 in hand) and leads first. The bid is the base stake.</p>" +
+  "<p><b>Play:</b> beat the previous play with a higher combination of the same type and size, or pass. Two passes in a row end the trick and the last player leads again. First player with an empty hand wins — either peasant winning beats the landlord.</p>" +
+  "<p><b>Combinations:</b></p><ul>" +
+  "<li>Single · Pair · Triple</li>" +
+  "<li>Triple + a single (6‑6‑6‑8) or + a pair (Q‑Q‑Q‑6‑6) — ranked by the triple</li>" +
+  "<li>Straight: 5+ consecutive ranks, 3 up to A (no 2s or jokers)</li>" +
+  "<li>Pair sequence: 3+ consecutive pairs · Airplane: 2+ consecutive triples</li>" +
+  "<li>Airplane + one single per triple, or + one pair per triple (attachments must differ from the triples; never both jokers)</li>" +
+  "<li>Quadplex: four of a kind + two singles of different ranks, or + two pairs. Beaten by any bomb.</li>" +
+  "<li><b>Bomb</b> (four of a kind) beats everything but a higher bomb or the rocket</li>" +
+  "<li><b>Rocket</b> (both jokers) beats everything</li>" +
+  "</ul>" +
+  "<p><b>Scoring:</b> each opponent pays the landlord the bid; the landlord pays both if a peasant goes out first. Every bomb and rocket played doubles the stake. <b>Spring:</b> doubled again if the peasants never play a card — or if the landlord plays only once.</p>" +
+  "<p><b>Money:</b> everyone sits down with " + fmt(START_CHIPS) + " chips. You pick a <b>stake</b> — chips per " +
+  "scoring point — before each deal, and it is locked in once the cards are out. A hand settles at " +
+  "<i>bid × bomb multiplier × spring × stake</i>: the landlord collects that from <b>each</b> opponent, " +
+  "or pays it to each of them. So at 10 a point, a bid of 3 with one bomb is 60 a head — 120 to the landlord. " +
+  "Play is table stakes: nobody can win or lose more chips than they have in front of them. " +
+  "Bust out and you can rebuy; the AI opponents rebuy on their own. Banks are saved between sessions.</p>" +
+  "<p><b>Controls:</b> click cards to select, <kbd>Play</kbd> to commit, <kbd>Hint</kbd> cycles through legal plays.</p>" +
+  '<div class="row"><button class="gold" id="mclose">Got it</button></div>';
+
+/* ---------------- boot ---------------- */
+/* ======================= online play =======================
+   The server is a dumb relay. Whoever opens the table is the dealer: they run the
+   rules and send each player only their own cards, so no hand is ever transmitted
+   to somebody who should not see it. Empty seats are played by bots. */
+var NET = {room:null, pid:null, es:null, hostPid:null, seatPid:[null,null,null], urls:[]};
+
+function netId(){ return Math.random().toString(36).slice(2, 10); }
+function netPost(url, body){
+  return fetch(url, {method:"POST", headers:{"content-type":"application/json"},
+                     body:JSON.stringify(body)}).then(function(r){ return r.json(); });
+}
+function netSend(msg, to){
+  if (!NET.room) return;
+  netPost("/r/pub", {room:NET.room, from:NET.pid, to:to || null, msg:msg})["catch"](function(){});
+}
+function netConnect(room, onMsg){
+  NET.room = room;
+  NET.pid  = netId();
+  NET.es   = new EventSource("/r/sub?room=" + encodeURIComponent(room) + "&pid=" + NET.pid);
+  NET.es.onmessage = function(e){
+    var env;
+    try { env = JSON.parse(e.data); } catch(err){ return; }
+    if (env && env.msg) onMsg(env.msg, env.from);
+  };
+  NET.es.onerror = function(){ /* EventSource retries by itself */ };
+}
+
+/* ---- what each player is allowed to see ---- */
+function buildView(p){
+  return {
+    t:"view", me:p, phase:G.phase, turn:G.turn, landlord:G.landlord, bid:G.bid,
+    multiplier:G.multiplier, bombs:G.bombs, handBase:G.handBase, base:G.base,
+    chips:G.chips, names:G.names, humans:G.humans, kitty:G.kitty.length,
+    counts:[G.hands[0].length, G.hands[1].length, G.hands[2].length],
+    hand:G.hands[p],                                   /* only ever this player's own cards */
+    last:G.last ? {cards:G.last.cards, player:G.last.player} : null,
+    display:G.display.map(function(d){ return d === "pass" ? "pass" : null; }),
+    auction:G.auction ? {high:G.auction.high} : null
+  };
+}
+function applyView(v){
+  if (v.phase === "auction" && G.phase === "idle") boardSig = handSig = null;
+  G.me = v.me; G.phase = v.phase; G.turn = v.turn; G.landlord = v.landlord;
+  G.bid = v.bid; G.multiplier = v.multiplier; G.bombs = v.bombs;
+  G.handBase = v.handBase; G.base = v.base;
+  G.chips = v.chips; G.names = v.names; G.humans = v.humans;
+  G.kitty = new Array(v.kitty);
+  G.hands = [0,1,2].map(function(i){ return i === v.me ? v.hand : new Array(v.counts[i]); });
+  G.last = v.last ? {cards:v.last.cards, player:v.last.player, combo:parseCombo(v.last.cards)} : null;
+  G.display = v.display;
+  G.auction = v.auction ? {high:v.auction.high, highBidder:-1, passes:0, seen:0} : null;
+  hideHome();
+  hideModal();
+  render();
+  if (G.phase === "play" || G.phase === "auction"){
+    if (G.turn === G.me){
+      setStatus(G.phase === "auction"
+        ? '<div class="big">Your bid</div>' + (v.auction && v.auction.high ? "highest bid " + v.auction.high : "no bids yet")
+        : '<div class="big">Your turn</div>' + (G.last ? "beat the " + comboName(G.last.combo.type).replace(/^\S+\s/,"") : "you lead"));
+    } else {
+      setStatus('<div class="big">' + pname(G.turn) + "</div>" + (G.phase === "auction" ? "bidding…" : "playing…"));
+    }
+  }
+}
+var bcPending = null;
+function broadcastViews(){
+  if (G.mode !== "host") return;
+  bcPending = null;
+  for (var p = 0; p < 3; p++){
+    var pid = NET.seatPid[p];
+    if (pid && pid !== NET.pid) netSend(buildView(p), pid);
+  }
+}
+function broadcastSoon(){
+  if (G.mode !== "host" || bcPending) return;
+  bcPending = setTimeout(broadcastViews, 40);
+}
+
+/* ---- the dealer validates every move it is sent ---- */
+function hostHandleAct(seat, a){
+  if (seat < 0) return;
+  if (a.kind === "bid"){
+    if (G.phase === "auction" && G.turn === seat) applyBid(seat, a.v);
+    return;
+  }
+  if (G.phase !== "play" || G.turn !== seat) return;
+  if (a.kind === "pass"){ if (G.last) passTurn(seat); return; }
+  var ids = a.ids || [], hand = G.hands[seat];
+  var cards = hand.filter(function(c){ return ids.indexOf(c.id) >= 0; });
+  if (!cards.length || cards.length !== ids.length) return;      /* not their cards */
+  var cb = parseCombo(cards);
+  if (!cb) return;                                               /* not a legal shape */
+  if (G.last && !beats(cb, G.last.combo)) return;                /* does not beat */
+  playCards(seat, cards);
+}
+function seatOfPid(pid){
+  for (var i = 0; i < 3; i++) if (NET.seatPid[i] === pid) return i;
+  return -1;
+}
+function hostOnMsg(msg, from){
+  if (msg.t === "hello"){ NET.hostPid = NET.pid; renderLobby(); return; }
+  if (msg.t === "join"){
+    var seat = seatOfPid(from);
+    if (seat < 0){
+      seat = NET.seatPid.indexOf(null, 1);
+      if (seat < 1) { netSend({t:"full"}, from); return; }
+      NET.seatPid[seat] = from;
+      G.humans[seat] = true;
+      G.names[seat] = (msg.name || "Player").slice(0, 12);
+    }
+    netSend({t:"seated", seat:seat, room:NET.room, hostPid:NET.pid, names:G.names}, from);
+    renderLobby();
+    if (G.phase !== "idle") broadcastViews();
+    return;
+  }
+  if (msg.t === "act"){ hostHandleAct(seatOfPid(from), msg); return; }
+  if (msg.t === "peer-left"){
+    var s2 = seatOfPid(msg.pid);
+    if (s2 > 0){
+      NET.seatPid[s2] = null;
+      G.humans[s2] = false;
+      G.names[s2] = null;
+      log(t("logLeft", pname(s2)));
+      renderLobby();
+      render();
+      if ((G.phase === "play" || G.phase === "auction") && G.turn === s2){
+        G.phase === "auction" ? nextBid() : turnLoop();
+      }
+    }
+    return;
+  }
+}
+function guestOnMsg(msg, from){
+  if (msg.t === "hello"){ netSend({t:"join", name: guestName()}); return; }
+  if (msg.t === "seated"){
+    G.me = msg.seat; G.names = msg.names; NET.hostPid = msg.hostPid;
+    renderLobby();
+    return;
+  }
+  if (msg.t === "full"){ showNotice(t("fullT"), t("fullB")); return; }
+  if (msg.t === "view"){ applyView(msg); return; }
+  if (msg.t === "result"){ showResult(msg.result); return; }
+  if (msg.t === "lobby"){ G.names = msg.names; renderLobby(); return; }
+  if (msg.t === "peer-left" && msg.pid === NET.hostPid){
+    showNotice(t("closedT"), t("closedB"));
+  }
+}
+function guestName(){
+  var n = "";
+  try { n = localStorage.getItem("ddz-name") || ""; } catch(e){}
+  return n || "Player";
+}
+
+/* ---- screens ---- */
+function showNotice(title, body){
+  showModal("<h2>" + title + "</h2><p>" + body + "</p>" +
+            '<div class="row"><button class="gold" id="mclose2">' + t("backMenu") + "</button></div>",
+    function(){ $("#mclose2").addEventListener("click", function(){ hideModal(); showHome(); }); });
+}
+function showServerHelp(){
+  showModal(
+    "<h2>" + t("srvT") + "</h2>" +
+    '<div class="sub">' + t("srvSub") + "</div>" +
+    "<p>" + t("srvB1") + "</p>" +
+    "<p><code>node server.js</code></p>" +
+    "<p>" + t("srvB2") + "</p>" +
+    '<div class="row"><button class="gold" id="mclose3">' + t("gotIt") + "</button></div>",
+    function(){ $("#mclose3").addEventListener("click", function(){ hideModal(); showHome(); }); });
+}
+function showOnlineSetup(){
+  if (location.protocol === "file:") return showServerHelp();
+  hideHome();
+  G.epoch++; G.phase = "idle";          /* abandon any hand still running behind the menu */
+  netPost("/r/new", {}).then(function(r){
+    NET.urls = r.urls || [];
+    G.mode = "host"; G.me = 0;
+    G.humans = [true, false, false];
+    G.names = [null, null, null];
+    G.chips = [START_CHIPS, START_CHIPS, START_CHIPS];
+    netConnect(r.room, hostOnMsg);
+    NET.seatPid[0] = NET.pid;
+    renderLobby();
+  })["catch"](function(){ showServerHelp(); });
+}
+function shareLink(){
+  var base = NET.urls && NET.urls.length ? NET.urls[0] : location.origin;
+  return base + "/?table=" + NET.room;
+}
+function renderLobby(){
+  if (G.phase !== "idle") return;
+  var dealer = G.mode === "host";
+  var seats = [0,1,2].map(function(i){
+    var mine = i === G.me;
+    var taken = i === 0 ? true : !!NET.seatPid[i];
+    var who = mine ? t("you") : (taken ? (G.names[i] || t("player")) : t("bot"));
+    return "<li><span>" + (mine ? "🙋" : taken ? "🧑" : "🤖") + "</span><span>" + who + "</span>" +
+      '<span class="tag' + (taken ? " here" : "") + '">' +
+      (mine ? t("tagYou") : taken ? t("tagJoined") : t("tagBot")) + "</span></li>";
+  }).join("");
+  showModal(
+    "<h2>" + (dealer ? t("yourTable") : t("joiningTable")) + "</h2>" +
+    '<div class="sub">' + t("tableIs", NET.room || "…") + "</div>" +
+    '<ul class="seatlist">' + seats + "</ul>" +
+    (dealer
+      ? '<div class="linkbox"><input id="lnk" readonly value="' + shareLink() + '">' +
+        '<button class="ghost" id="lnkcopy">' + t("copy") + "</button></div>" +
+        '<div class="hostnote">' + t("hostNote") + "</div>"
+      : '<div class="sub">' + t("waitStart") + "</div>") +
+    '<div class="row"><button class="ghost" id="lobbyback">' + t("leave") + "</button>" +
+    (dealer ? '<button class="gold" id="lobbystart">' + t("deal") + "</button>" : "") + "</div>",
+    function(){
+      if ($("#lnkcopy")) $("#lnkcopy").addEventListener("click", function(){
+        var i = $("#lnk"); i.select();
+        try { navigator.clipboard.writeText(i.value); } catch(e){ try { document.execCommand("copy"); } catch(e2){} }
+        $("#lnkcopy").textContent = t("copied");
+      });
+      if ($("#lobbystart")) $("#lobbystart").addEventListener("click", function(){
+        hideModal();
+        netSend({t:"lobby", names:G.names});
+        newRound();
+      });
+      $("#lobbyback").addEventListener("click", function(){
+        netLeave(); hideModal(); showHome();
+      });
+    }
+  );
+}
+function netLeave(){
+  if (NET.es) { try { NET.es.close(); } catch(e){} }
+  NET = {room:null, pid:null, es:null, hostPid:null, seatPid:[null,null,null], urls:[]};
+}
+function joinTable(code){
+  hideHome();
+  G.epoch++; G.phase = "idle";
+  G.mode = "guest"; G.me = 1;
+  netConnect(code, guestOnMsg);
+  renderLobby();
+}
+
+function stakeOptions(){
+  var sel = $("#stakesel"), cur = G.base;
+  sel.innerHTML = STAKES.map(function(v){
+    return '<option value="' + v + '">' + t("perPt", v) + "</option>";
+  }).join("");
+  sel.value = cur;
+}
+/* Text baked into the markup has to be refreshed whenever the language changes. */
+function applyStaticLabels(){
+  document.querySelector("h1 small").textContent = t("sub");
+  $("#btnrules").textContent = t("rules");
+  $("#btnnew").textContent   = t("newHand");
+  $("#btnexit").textContent  = t("exit");
+  $("#stakelbl").textContent = t("stake");
+  document.querySelector("#kitty .lbl").textContent = t("kitty");
+  $("#passme").textContent = t("passTag");
+  [].forEach.call(document.querySelectorAll(".seatpass"), function(e){ e.textContent = t("passTag"); });
+  document.querySelector(".heroSub").textContent = t("sub");
+  document.querySelector("#modeAi .mt").textContent = t("modeAiT");
+  document.querySelector("#modeAi .md").textContent = t("modeAiD");
+  document.querySelector("#modeOnline .mt").textContent = t("modeOnT");
+  document.querySelector("#modeOnline .md").textContent = t("modeOnD");
+  $("#homeRules").textContent = t("howTo");
+  $("#homeSettings").textContent = t("settings");
+  $("#homeAch").textContent = t("achievements");
+  $("#homeHint").textContent = t("homeKeys");
+  renderMute();
+  stakeOptions();
+}
+function setLanguage(id){
+  LANG = id;
+  achLang(id);
+  try { localStorage.setItem("ddz-lang", LANG); } catch(e){}
+  applyStaticLabels();
+  boardSig = handSig = null;              /* captions and combo names are localised */
+  render();
+}
+/* one segmented row of choices */
+function segRow(label, options, current, cls){
+  return '<div class="setrow"><div class="lbl">' + label + "</div>" +
+    '<div class="' + (cls || "seg") + '">' + options.map(function(o){
+      return '<button data-v="' + o.v + '"' + (o.v === current ? ' class="on"' : "") + ">" + o.t + "</button>";
+    }).join("") + "</div></div>";
+}
+function showSettings(){
+  var feltKeys = ["green","blue","burgundy","slate","purple"];
+  var feltNames = {green:"feltGreen", blue:"feltBlue", burgundy:"feltBurgundy", slate:"feltSlate", purple:"feltPurple"};
+  var swatches = '<div class="setrow"><div class="lbl">' + t("setFelt") + '</div><div class="swatches">' +
+    feltKeys.map(function(k){
+      var f = FELTS[k];
+      return '<button class="swatch' + (PREFS.felt === k ? " on" : "") + '" data-felt="' + k + '" title="' + t(feltNames[k]) +
+        '" style="background:linear-gradient(140deg,' + f[0] + ',' + f[2] + ')"></button>';
+    }).join("") + "</div></div>";
+
+  showModal(
+    "<h2>" + t("settings") + "</h2>" +
+    segRow(t("setLang"), LANGS.map(function(l){ return {v:l.id, t:l.label}; }), LANG, "seg lang") +
+    segRow(t("setDiff"), [{v:"easy",t:t("diffEasy")},{v:"normal",t:t("diffNormal")},
+                          {v:"hard",t:t("diffHard")},{v:"impossible",t:t("diffImpossible")}],
+           PREFS.diff, "seg diff") +
+    '<div class="setrow" style="margin-top:-10px"><div class="note">' + t("diffNote") + "</div></div>" +
+    segRow(t("setCards"), [{v:"s",t:t("szS")},{v:"m",t:t("szM")},{v:"l",t:t("szL")}], PREFS.cardSize, "seg size") +
+    segRow(t("setMusic"), [{v:"on",t:t("musicOn")},{v:"off",t:t("musicOff")}],
+           PREFS.music ? "on" : "off", "seg music") +
+    segRow(t("setSfx"), [{v:"on",t:t("musicOn")},{v:"off",t:t("musicOff")}],
+           PREFS.sfx ? "on" : "off", "seg sfx") +
+    swatches +
+    '<div class="row"><button class="gold" id="setdone">' + t("done") + "</button></div>",
+    function(){
+        /* Update the row in place. Rebuilding the whole panel on every click threw away
+         its scroll position, so on a short window anything below the fold bounced back
+         to the top and felt unclickable. */
+      function markRow(cls, v){
+        [].forEach.call(document.querySelectorAll("#modal ." + cls + " button"), function(o){
+          o.classList.toggle("on", (o.dataset.v || o.dataset.felt) === v);
+        });
+      }
+      function wire(sel, fn){
+        var cls = sel.replace(/^.*\./, "");
+        [].forEach.call(document.querySelectorAll("#modal " + sel + " button"), function(b){
+          b.addEventListener("click", function(){
+            var v = b.dataset.v || b.dataset.felt;
+            fn(v);
+            savePrefs();
+            markRow(cls, v);
+          });
+        });
+      }
+      wire(".lang",  function(v){
+        setLanguage(v);
+        var keep = $("#modal").scrollTop;
+        showSettings();                       /* every label changed, so redraw … */
+        $("#modal").scrollTop = keep;         /* … without losing your place */
+      });
+      wire(".diff",  function(v){ PREFS.diff = v; });
+      wire(".size",  function(v){ PREFS.cardSize = v; applyPrefs(); fitHand(); });
+      wire(".music", function(v){
+        var want = (v === "on");
+        if (want !== PREFS.music) musicToggle();
+      });
+      wire(".sfx", function(v){
+        PREFS.sfx = (v === "on");
+        if (PREFS.sfx) sfxCard(1);        /* let you hear what you just switched on */
+      });
+      [].forEach.call(document.querySelectorAll("#modal .swatch"), function(b){
+        b.addEventListener("click", function(){
+          PREFS.felt = b.dataset.felt;
+          applyPrefs(); savePrefs();
+          [].forEach.call(document.querySelectorAll("#modal .swatch"), function(o){
+            o.classList.toggle("on", o === b);
+          });
+        });
+      });
+      $("#setdone").addEventListener("click", function(){
+        hideModal();
+        if ($("#home").classList.contains("hidden")) showHome();
+      });
+    }
+  );
+}
+initStakePicker();
+applyPrefs();
+applyStaticLabels();
+
+/* ======================= music =======================
+   Synthesised in the browser — the game is one self-contained file, so there is no
+   audio to download. Two looping pentatonic themes: a calm one for the menu and a
+   faster one at the table. Browsers refuse to make noise before you interact with
+   the page, so the audio engine is built on your first click and not before. */
+function expandSeq(seq, total){
+  var out = [], i;
+  for (i = 0; i < total; i++) out.push(0);
+  i = 0;
+  seq.forEach(function(pair){
+    if (i < total) out[i] = pair[0];
+    i += pair[1];
+  });
+  return out;
+}
+var TRACKS = {
+  menu: {
+    bpm:96, steps:64, wave:"triangle", lead:0.15, perc:false,
+    ring:5.6, bassRing:15, arpGain:0.05,
+    /* a soft arpeggio under the tune so the menu does not sit in silence between notes */
+    arp: expandSeq([[72,2],[76,2],[79,2],[76,2],[72,2],[76,2],[79,2],[76,2],
+                    [69,2],[72,2],[76,2],[72,2],[69,2],[72,2],[76,2],[72,2],
+                    [67,2],[74,2],[79,2],[74,2],[67,2],[74,2],[79,2],[74,2],
+                    [72,2],[76,2],[79,2],[76,2],[72,2],[76,2],[79,2],[76,2]], 64),
+    mel: expandSeq([[76,4],[79,4],[81,4],[79,4],
+                    [76,4],[74,4],[72,8],
+                    [74,4],[76,4],[79,4],[76,4],
+                    [74,4],[72,12]], 64),
+    bass: expandSeq([[48,16],[45,16],[43,16],[48,16]], 64)
+  },
+  play: {
+    bpm:132, steps:64, wave:"square", lead:0.11, perc:true,
+    ring:2.8, bassRing:5, arpGain:0, arp:null,
+    mel: expandSeq([[79,2],[81,2],[84,2],[81,2],[79,2],[76,2],[79,4],
+                    [81,2],[84,2],[86,2],[84,2],[81,2],[79,2],[76,4],
+                    [76,2],[79,2],[81,2],[79,2],[76,2],[74,2],[72,4],
+                    [74,2],[76,2],[79,2],[81,2],[84,2],[81,2],[79,4]], 64),
+    bass: expandSeq([[48,8],[48,8],[43,8],[43,8],[45,8],[45,8],[43,8],[48,8]], 64)
+  }
+};
+var MUSIC = {ctx:null, master:null, sfx:null, timer:null, track:null, want:null, step:0, nextAt:0, noise:null};
+function hz(midi){ return 440 * Math.pow(2, (midi - 69) / 12); }
+
+function audioBoot(){
+  if (MUSIC.ctx) return true;
+  var AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return false;
+  try {
+    MUSIC.ctx = new AC();
+    MUSIC.master = MUSIC.ctx.createGain();          /* music bus */
+    MUSIC.master.gain.value = 0.0001;
+    MUSIC.sfx = MUSIC.ctx.createGain();             /* effects bus, independent of music */
+    MUSIC.sfx.gain.value = 0.9;
+    var comp = MUSIC.ctx.createDynamicsCompressor();
+    MUSIC.master.connect(comp);
+    MUSIC.sfx.connect(comp);
+    comp.connect(MUSIC.ctx.destination);
+    /* a little noise buffer for the hats */
+    var n = MUSIC.ctx.sampleRate * 0.2, buf = MUSIC.ctx.createBuffer(1, n, MUSIC.ctx.sampleRate);
+    var d = buf.getChannelData(0), i;
+    for (i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+    MUSIC.noise = buf;
+  } catch(e){ MUSIC.ctx = null; return false; }
+  return true;
+}
+function pluck(at, freq, dur, wave, peak){
+  var c = MUSIC.ctx, o = c.createOscillator(), g = c.createGain();
+  o.type = wave; o.frequency.value = freq;
+  g.gain.setValueAtTime(0.0001, at);
+  g.gain.exponentialRampToValueAtTime(peak, at + 0.012);
+  g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+  o.connect(g); g.connect(MUSIC.master);
+  o.start(at); o.stop(at + dur + 0.02);
+}
+function bassNote(at, freq, dur){
+  var c = MUSIC.ctx, o = c.createOscillator(), g = c.createGain(), f = c.createBiquadFilter();
+  o.type = "triangle"; o.frequency.value = freq;
+  f.type = "lowpass"; f.frequency.value = 620;
+  g.gain.setValueAtTime(0.0001, at);
+  g.gain.exponentialRampToValueAtTime(0.16, at + 0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+  o.connect(f); f.connect(g); g.connect(MUSIC.master);
+  o.start(at); o.stop(at + dur + 0.02);
+}
+function hat(at, peak){
+  var c = MUSIC.ctx, src = c.createBufferSource(), g = c.createGain(), f = c.createBiquadFilter();
+  src.buffer = MUSIC.noise;
+  f.type = "highpass"; f.frequency.value = 7000;
+  g.gain.setValueAtTime(peak, at);
+  g.gain.exponentialRampToValueAtTime(0.0001, at + 0.05);
+  src.connect(f); f.connect(g); g.connect(MUSIC.master);
+  src.start(at); src.stop(at + 0.06);
+}
+/* ---------------- sound effects ----------------
+   Short, synthesised the same way as the music, on their own bus so turning the
+   music off does not silence them. */
+function sfxReady(){
+  if (!PREFS.sfx) return false;
+  if (!audioBoot()) return false;
+  if (MUSIC.ctx.state === "suspended" && MUSIC.ctx.resume) MUSIC.ctx.resume();
+  return true;
+}
+function tone(at, f0, f1, dur, type, peak, dest){
+  var c = MUSIC.ctx, o = c.createOscillator(), g = c.createGain();
+  o.type = type;
+  o.frequency.setValueAtTime(f0, at);
+  if (f1 !== f0) o.frequency.exponentialRampToValueAtTime(f1, at + dur);
+  g.gain.setValueAtTime(0.0001, at);
+  g.gain.exponentialRampToValueAtTime(peak, at + 0.008);
+  g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+  o.connect(g); g.connect(dest || MUSIC.sfx);
+  o.start(at); o.stop(at + dur + 0.02);
+}
+function noiseBurst(at, dur, peak, filtType, f0, f1, dest){
+  var c = MUSIC.ctx, src = c.createBufferSource(), g = c.createGain(), f = c.createBiquadFilter();
+  src.buffer = MUSIC.noise; src.loop = true;
+  f.type = filtType;
+  f.frequency.setValueAtTime(f0, at);
+  if (f1 !== f0) f.frequency.exponentialRampToValueAtTime(f1, at + dur);
+  g.gain.setValueAtTime(peak, at);
+  g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+  src.connect(f); f.connect(g); g.connect(dest || MUSIC.sfx);
+  src.start(at); src.stop(at + dur + 0.02);
+}
+/* a card leaving the hand: a paper flick plus a small bright blip that opens up
+   as the combination gets bigger */
+function sfxCard(n, dest){
+  if (!dest && !sfxReady()) return;
+  var at = (dest ? 0 : MUSIC.ctx.currentTime) + 0.001;
+  noiseBurst(at, 0.07, 0.05, "bandpass", 2600, 1200, dest);
+  var big = Math.min(n || 1, 8);
+  tone(at + 0.01, 660 + big * 25, 880 + big * 30, 0.11, "triangle", 0.10, dest);
+  if (big >= 3) tone(at + 0.05, 990, 1180, 0.10, "triangle", 0.07, dest);
+}
+/* passing: a soft two-note shrug downwards */
+function sfxPass(dest){
+  if (!dest && !sfxReady()) return;
+  var at = (dest ? 0 : MUSIC.ctx.currentTime) + 0.001;
+  tone(at,        320, 300, 0.09, "sine", 0.07, dest);
+  tone(at + 0.07, 240, 210, 0.12, "sine", 0.06, dest);
+}
+/* a bomb: low body drop under a filtered blast */
+function sfxBomb(dest){
+  if (!dest && !sfxReady()) return;
+  var at = (dest ? 0 : MUSIC.ctx.currentTime) + 0.001;
+  noiseBurst(at, 0.42, 0.22, "lowpass", 3200, 180, dest);
+  tone(at, 180, 42, 0.40, "sine", 0.28, dest);
+  tone(at, 90, 30, 0.30, "square", 0.10, dest);
+}
+/* the rocket outranks everything, so it gets a launch: a rising whoosh into a burst */
+function sfxRocket(dest){
+  if (!dest && !sfxReady()) return;
+  var at = (dest ? 0 : MUSIC.ctx.currentTime) + 0.001;
+  noiseBurst(at, 0.30, 0.10, "bandpass", 400, 2600, dest);
+  tone(at, 300, 1500, 0.30, "sawtooth", 0.09, dest);
+  noiseBurst(at + 0.30, 0.34, 0.20, "lowpass", 4000, 300, dest);
+  tone(at + 0.30, 520, 90, 0.34, "triangle", 0.16, dest);
+}
+function musicTick(){
+  var T = TRACKS[MUSIC.track];
+  if (!T || !MUSIC.ctx) return;
+  var stepDur = 60 / T.bpm / 4;                 /* sixteenth notes */
+  while (MUSIC.nextAt < MUSIC.ctx.currentTime + 0.18){
+    var s = MUSIC.step % T.steps, at = MUSIC.nextAt;
+    if (T.mel[s])  pluck(at, hz(T.mel[s]), stepDur * (T.ring || 3.4), T.wave, T.lead);
+    if (T.arp && T.arp[s]) pluck(at, hz(T.arp[s]), stepDur * 2.2, "sine", T.arpGain);
+    if (T.bass[s]) bassNote(at, hz(T.bass[s] - 12), stepDur * (T.bassRing || 6));
+    if (T.perc && s % 2 === 0) hat(at, s % 8 === 0 ? 0.05 : 0.022);
+    MUSIC.step++;
+    MUSIC.nextAt += stepDur;
+  }
+}
+function musicSet(track){
+  MUSIC.want = track;
+  if (!PREFS.music || !MUSIC.ctx) return;
+  if (MUSIC.track === track) return;
+  MUSIC.track = track;
+  MUSIC.step = 0;
+  MUSIC.nextAt = MUSIC.ctx.currentTime + 0.06;
+  if (!MUSIC.timer) MUSIC.timer = setInterval(musicTick, 25);
+  MUSIC.master.gain.cancelScheduledValues(MUSIC.ctx.currentTime);
+  MUSIC.master.gain.setValueAtTime(Math.max(MUSIC.master.gain.value, 0.0001), MUSIC.ctx.currentTime);
+  MUSIC.master.gain.exponentialRampToValueAtTime(0.5, MUSIC.ctx.currentTime + 0.6);
+}
+function musicStop(){
+  if (MUSIC.ctx && MUSIC.master){
+    MUSIC.master.gain.cancelScheduledValues(MUSIC.ctx.currentTime);
+    MUSIC.master.gain.setValueAtTime(MUSIC.master.gain.value, MUSIC.ctx.currentTime);
+    MUSIC.master.gain.exponentialRampToValueAtTime(0.0001, MUSIC.ctx.currentTime + 0.35);
+  }
+  if (MUSIC.timer){ clearInterval(MUSIC.timer); MUSIC.timer = null; }
+  MUSIC.track = null;
+}
+function musicToggle(){
+  PREFS.music = !PREFS.music;
+  savePrefs();
+  if (PREFS.music){ if (audioBoot()) { MUSIC.ctx.resume && MUSIC.ctx.resume(); musicSet(MUSIC.want || "menu"); } }
+  else musicStop();
+  renderMute();
+}
+function renderMute(){
+  var b = $("#btnmute");
+  if (!b) return;
+  b.textContent = PREFS.music ? "🔊" : "🔇";
+  b.title = t("setMusic");
+}
+/* browsers only allow audio after a real interaction */
+function unlockAudio(){
+  if (!PREFS.music && !PREFS.sfx) return;
+  if (!audioBoot()) return;
+  if (MUSIC.ctx.state === "suspended" && MUSIC.ctx.resume) MUSIC.ctx.resume();
+  if (PREFS.music) musicSet(MUSIC.want || "menu");
+}
+document.addEventListener("pointerdown", unlockAudio);
+document.addEventListener("keydown", unlockAudio);
+
+
+/* ======================= achievements ======================= */
+var ACH = [
+  {id:"first_win",   icon:"🎉", goal:1},
+  {id:"long_run",    icon:"🧱", goal:1},    /* straight of 8+ */
+  {id:"great_wall",  icon:"🐉", goal:1},    /* straight of 11+ */
+  {id:"three_bombs", icon:"💣", goal:1},    /* three bombs in one hand */
+  {id:"rocket",      icon:"🚀", goal:1},
+  {id:"airplane",    icon:"✈️", goal:1},    /* airplane carrying pairs */
+  {id:"quadplex",    icon:"🎴", goal:1},
+  {id:"streak3",     icon:"🔥", goal:3},
+  {id:"streak6",     icon:"⚡", goal:6},
+  {id:"spring",      icon:"🌸", goal:1},
+  {id:"landlord10",  icon:"👑", goal:10},
+  {id:"peasant10",   icon:"🌾", goal:10},
+  {id:"big_pot",     icon:"💰", goal:1},    /* +500 chips in a single hand */
+  {id:"hard_win",    icon:"🧠", goal:1},    /* beat the hard bots */
+  {id:"imp_win",     icon:"😈", goal:1},    /* beat the impossible bots */
+  {id:"pair_run",    icon:"🔗", goal:1},    /* five consecutive pairs */
+  {id:"squadron",    icon:"🛩️", goal:1},    /* three consecutive triples */
+  {id:"quad_two",    icon:"🃏", goal:1},    /* quad with two singles */
+  {id:"bang",        icon:"💥", goal:1},    /* go out on a bomb */
+  {id:"star_finish", icon:"🌠", goal:1},    /* go out on the rocket */
+  {id:"big_finish",  icon:"🎬", goal:1},    /* go out with 8+ cards at once */
+  {id:"relentless",  icon:"🎯", goal:1},    /* win without passing once */
+  {id:"arsenal",     icon:"🧨", goal:1},    /* a bomb and the rocket in one hand */
+  {id:"streak10",    icon:"🏆", goal:10},
+  {id:"hands100",    icon:"🕰️", goal:100},
+  {id:"wins50",      icon:"🥇", goal:50},
+  {id:"bank5000",    icon:"🏦", goal:1},
+  {id:"comeback",    icon:"🪃", goal:1},    /* win from 200 chips or fewer */
+  {id:"tuition",     icon:"💸", goal:1},    /* lose 500+ in one hand */
+  {id:"polyglot",    icon:"🌏", goal:4},    /* play in all four languages */
+  {id:"scorched",    icon:"🔥", goal:1},    /* five bombs in one hand */
+  {id:"full_run",    icon:"🀄", goal:1},    /* the whole 3-to-A straight */
+  {id:"sky_high",    icon:"📈", goal:1},    /* win at 16x or more */
+  {id:"all_in",      icon:"💪", goal:1},    /* win a hand bid at 3 */
+  {id:"rev_spring",  icon:"🌊", goal:1},    /* peasants' spring */
+  {id:"encyclopedia",icon:"🎓", goal:14},   /* play every kind of combination */
+  {id:"clean_hands", icon:"🕊️", goal:1},    /* win without a bomb or rocket */
+  {id:"blitz",       icon:"⚡", goal:1},    /* win in five plays or fewer */
+  {id:"split_kings", icon:"🃏", goal:1},    /* both jokers played separately */
+  {id:"bigger_bang", icon:"🛡️", goal:1},    /* out-bomb a bomb */
+  {id:"high_roller", icon:"💵", goal:1},    /* win at the top stake */
+  {id:"rock_bottom", icon:"🕳️", goal:1},    /* lose everything and rebuy */
+  {id:"hands500",    icon:"🗿", goal:500},
+  {id:"wins200",     icon:"👑", goal:200},
+  {id:"bank10000",   icon:"💎", goal:1}
+];
+var ACH_TXT = {
+en:{
+  first_win:["First blood","Win a hand."],
+  long_run:["Long haul","Play a straight of 8 cards or more."],
+  great_wall:["Great Wall","Play a straight longer than 10 cards."],
+  three_bombs:["Demolition","Play three bombs in a single hand."],
+  rocket:["Liftoff","Play the rocket — both jokers together."],
+  airplane:["Air traffic","Play an airplane carrying a pair on each triple."],
+  quadplex:["Four by four","Play a quad with two pairs attached."],
+  streak3:["On a roll","Win three hands in a row."],
+  streak6:["Unstoppable","Win six hands in a row."],
+  spring:["Spring 春天","Win a hand where the peasants never played a card."],
+  landlord10:["Landowner","Win ten hands as the landlord."],
+  peasant10:["Peasants' revolt","Win ten hands as a peasant."],
+  big_pot:["Big pot","Take 500 chips or more from a single hand."],
+  hard_win:["Outsmarted","Beat the bots on Hard."],
+  imp_win:["Impossible odds","Beat the bots on Impossible — while they can see your hand."],
+  pair_run:["Daisy chain","Play five consecutive pairs in one go."],
+  squadron:["Squadron","Play an airplane of three consecutive triples."],
+  quad_two:["Four and two","Play a quad with two single cards attached."],
+  bang:["Going out with a bang","Empty your hand by playing a bomb."],
+  star_finish:["Curtain call","Empty your hand by playing the rocket."],
+  big_finish:["Grand finale","Empty your hand with eight cards or more at once."],
+  relentless:["Relentless","Win a hand without passing a single time."],
+  arsenal:["Arsenal","Play a bomb and the rocket in the same hand."],
+  streak10:["Perfect ten","Win ten hands in a row."],
+  hands100:["Regular","Play a hundred hands."],
+  wins50:["Old hand","Win fifty hands."],
+  bank5000:["Loaded","Build your bank up to 5,000 chips."],
+  comeback:["Comeback","Win a hand that started with 200 chips or fewer."],
+  tuition:["Tuition","Lose 500 chips or more in a single hand."],
+  polyglot:["Polyglot","Play the game in all four languages."],
+  scorched:["Scorched earth","Play five bombs in a single hand."],
+  full_run:["Three to the ace","Play a straight running all the way from 3 to A."],
+  sky_high:["Sky high","Win a hand worth sixteen times the bid or more."],
+  all_in:["All in","Win a hand you bid three on."],
+  rev_spring:["Reverse spring","Win as a peasant with the landlord playing only once."],
+  encyclopedia:["Encyclopedia","Play every kind of combination at least once."],
+  clean_hands:["Clean hands","Win a hand without playing a bomb or the rocket."],
+  blitz:["Blitz","Win a hand in five plays or fewer."],
+  split_kings:["Split the kings","Play both jokers as separate singles in one hand."],
+  bigger_bang:["Bigger bang","Beat somebody's bomb with a bigger one."],
+  high_roller:["High roller","Win a hand at the top stake."],
+  rock_bottom:["Rock bottom","Lose your whole bank and buy back in."],
+  hands500:["Devoted","Play five hundred hands."],
+  wins200:["Master","Win two hundred hands."],
+  bank10000:["Tycoon","Build your bank up to 10,000 chips."]
+},
+zh:{
+  first_win:["旗开得胜","赢下一局。"],
+  long_run:["长龙","打出 8 张或更长的顺子。"],
+  great_wall:["万里长城","打出超过 10 张的顺子。"],
+  three_bombs:["拆迁大队","一局之内打出三个炸弹。"],
+  rocket:["火箭升空","打出王炸 — 双王。"],
+  airplane:["空中编队","打出飞机带对子。"],
+  quadplex:["四带两对","打出四带两对。"],
+  streak3:["连胜","连赢三局。"],
+  streak6:["势不可挡","连赢六局。"],
+  spring:["春天","农民一张牌都没出上就赢下一局。"],
+  landlord10:["地主之家","以地主身份赢十局。"],
+  peasant10:["农民翻身","以农民身份赢十局。"],
+  big_pot:["大赢家","单局赢下 500 以上筹码。"],
+  hard_win:["技高一筹","在困难难度下取胜。"],
+  imp_win:["逆天改命","在地狱难度下取胜 — 它们可是看得见你的牌。"],
+  pair_run:["连环","一次打出五个连对。"],
+  squadron:["机队","打出三连的飞机。"],
+  quad_two:["四带二","打出四带两张单牌。"],
+  bang:["一炸收官","用炸弹打完最后的牌。"],
+  star_finish:["压轴王炸","用王炸打完最后的牌。"],
+  big_finish:["一把清空","最后一手打出八张或更多牌。"],
+  relentless:["寸步不让","整局不要一次也没说过，还赢了。"],
+  arsenal:["军火库","一局之内既放炸弹又放王炸。"],
+  streak10:["十连胜","连赢十局。"],
+  hands100:["常客","累计打满一百局。"],
+  wins50:["老手","累计赢下五十局。"],
+  bank5000:["财大气粗","筹码累积到 5,000。"],
+  comeback:["绝地反击","在只剩 200 以下筹码时赢下一局。"],
+  tuition:["交学费","单局输掉 500 以上筹码。"],
+  polyglot:["四国语言","用全部四种语言玩过游戏。"],
+  scorched:["焦土","一局之内打出五个炸弹。"],
+  full_run:["一条龙","打出从 3 到 A 的整条顺子。"],
+  sky_high:["翻上天","赢下一局，倍数达到十六倍以上。"],
+  all_in:["孤注一掷","叫三分并赢下这一局。"],
+  rev_spring:["反春天","当农民赢下一局，地主只出了一手牌。"],
+  encyclopedia:["百科全书","每种牌型都至少打出过一次。"],
+  clean_hands:["兵不血刃","不放炸弹也不放王炸就赢下一局。"],
+  blitz:["闪电战","五手之内赢下一局。"],
+  split_kings:["拆王","一局之内把两张王分开当单牌出。"],
+  bigger_bang:["以炸制炸","用更大的炸弹压过别人的炸弹。"],
+  high_roller:["豪赌","在最高底注下赢一局。"],
+  rock_bottom:["跌到谷底","输光筹码后重新买入。"],
+  hands500:["痴迷","累计打满五百局。"],
+  wins200:["宗师","累计赢下两百局。"],
+  bank10000:["大亨","筹码累积到 10,000。"]
+},
+zhT:{
+  first_win:["旗開得勝","贏下一局。"],
+  long_run:["長龍","打出 8 張或更長的順子。"],
+  great_wall:["萬里長城","打出超過 10 張的順子。"],
+  three_bombs:["拆遷大隊","一局之內打出三個炸彈。"],
+  rocket:["火箭升空","打出王炸 — 雙王。"],
+  airplane:["空中編隊","打出飛機帶對子。"],
+  quadplex:["四帶兩對","打出四帶兩對。"],
+  streak3:["連勝","連贏三局。"],
+  streak6:["勢不可擋","連贏六局。"],
+  spring:["春天","農民一張牌都沒出上就贏下一局。"],
+  landlord10:["地主之家","以地主身份贏十局。"],
+  peasant10:["農民翻身","以農民身份贏十局。"],
+  big_pot:["大贏家","單局贏下 500 以上籌碼。"],
+  hard_win:["技高一籌","在困難難度下取勝。"],
+  imp_win:["逆天改命","在地獄難度下取勝 — 它們可是看得見你的牌。"],
+  pair_run:["連環","一次打出五個連對。"],
+  squadron:["機隊","打出三連的飛機。"],
+  quad_two:["四帶二","打出四帶兩張單牌。"],
+  bang:["一炸收官","用炸彈打完最後的牌。"],
+  star_finish:["壓軸王炸","用王炸打完最後的牌。"],
+  big_finish:["一把清空","最後一手打出八張或更多牌。"],
+  relentless:["寸步不讓","整局不要一次也沒說過，還贏了。"],
+  arsenal:["軍火庫","一局之內既放炸彈又放王炸。"],
+  streak10:["十連勝","連贏十局。"],
+  hands100:["常客","累計打滿一百局。"],
+  wins50:["老手","累計贏下五十局。"],
+  bank5000:["財大氣粗","籌碼累積到 5,000。"],
+  comeback:["絕地反擊","在只剩 200 以下籌碼時贏下一局。"],
+  tuition:["繳學費","單局輸掉 500 以上籌碼。"],
+  polyglot:["四國語言","用全部四種語言玩過遊戲。"],
+  scorched:["焦土","一局之內打出五個炸彈。"],
+  full_run:["一條龍","打出從 3 到 A 的整條順子。"],
+  sky_high:["翻上天","贏下一局，倍數達到十六倍以上。"],
+  all_in:["孤注一擲","叫三分並贏下這一局。"],
+  rev_spring:["反春天","當農民贏下一局，地主只出了一手牌。"],
+  encyclopedia:["百科全書","每種牌型都至少打出過一次。"],
+  clean_hands:["兵不血刃","不放炸彈也不放王炸就贏下一局。"],
+  blitz:["閃電戰","五手之內贏下一局。"],
+  split_kings:["拆王","一局之內把兩張王分開當單牌出。"],
+  bigger_bang:["以炸制炸","用更大的炸彈壓過別人的炸彈。"],
+  high_roller:["豪賭","在最高底注下贏一局。"],
+  rock_bottom:["跌到谷底","輸光籌碼後重新買入。"],
+  hands500:["痴迷","累計打滿五百局。"],
+  wins200:["宗師","累計贏下兩百局。"],
+  bank10000:["大亨","籌碼累積到 10,000。"]
+},
+es:{
+  first_win:["Primera sangre","Gana una mano."],
+  long_run:["Buen tramo","Juega una escalera de 8 cartas o más."],
+  great_wall:["Gran Muralla","Juega una escalera de más de 10 cartas."],
+  three_bombs:["Demolición","Juega tres bombas en una sola mano."],
+  rocket:["Despegue","Juega el cohete — los dos comodines."],
+  airplane:["Tráfico aéreo","Juega un avión con una pareja en cada trío."],
+  quadplex:["Cuatro por cuatro","Juega un cuarteto con dos parejas."],
+  streak3:["Racha","Gana tres manos seguidas."],
+  streak6:["Imparable","Gana seis manos seguidas."],
+  spring:["Primavera 春天","Gana una mano sin que los campesinos jueguen una carta."],
+  landlord10:["Terrateniente","Gana diez manos como terrateniente."],
+  peasant10:["Revuelta campesina","Gana diez manos como campesino."],
+  big_pot:["Bote grande","Llévate 500 fichas o más en una sola mano."],
+  hard_win:["Más listo","Gana a los bots en Difícil."],
+  imp_win:["Contra todo pronóstico","Gana en Imposible — y eso que te ven las cartas."],
+  pair_run:["Cadena","Juega cinco parejas consecutivas de una vez."],
+  squadron:["Escuadrón","Juega un avión de tres tríos consecutivos."],
+  quad_two:["Cuatro y dos","Juega un cuarteto con dos cartas sueltas."],
+  bang:["Con estruendo","Quédate sin cartas jugando una bomba."],
+  star_finish:["Telón","Quédate sin cartas jugando el cohete."],
+  big_finish:["Gran final","Quédate sin cartas soltando ocho o más de golpe."],
+  relentless:["Implacable","Gana una mano sin pasar ni una sola vez."],
+  arsenal:["Arsenal","Juega una bomba y el cohete en la misma mano."],
+  streak10:["Diez perfectos","Gana diez manos seguidas."],
+  hands100:["Habitual","Juega cien manos."],
+  wins50:["Veterano","Gana cincuenta manos."],
+  bank5000:["Forrado","Haz crecer tu banca hasta 5.000 fichas."],
+  comeback:["Remontada","Gana una mano que empezó con 200 fichas o menos."],
+  tuition:["Matrícula","Pierde 500 fichas o más en una sola mano."],
+  polyglot:["Políglota","Juega en los cuatro idiomas."],
+  scorched:["Tierra quemada","Juega cinco bombas en una sola mano."],
+  full_run:["Del 3 al as","Juega una escalera que vaya del 3 hasta el as."],
+  sky_high:["Por las nubes","Gana una mano que valga dieciséis veces la puja o más."],
+  all_in:["A por todas","Gana una mano que pujaste a tres."],
+  rev_spring:["Primavera inversa","Gana como campesino con el terrateniente jugando una sola vez."],
+  encyclopedia:["Enciclopedia","Juega cada tipo de combinación al menos una vez."],
+  clean_hands:["Manos limpias","Gana una mano sin jugar bomba ni cohete."],
+  blitz:["Relámpago","Gana una mano en cinco jugadas o menos."],
+  split_kings:["Comodines sueltos","Juega los dos comodines por separado en una mano."],
+  bigger_bang:["Más pólvora","Supera la bomba de otro con una mayor."],
+  high_roller:["A lo grande","Gana una mano a la apuesta más alta."],
+  rock_bottom:["Tocar fondo","Piérdelo todo y vuelve a entrar."],
+  hands500:["Devoto","Juega quinientas manos."],
+  wins200:["Maestro","Gana doscientas manos."],
+  bank10000:["Magnate","Haz crecer tu banca hasta 10.000 fichas."]
+}
+};
+function achText(id){
+  var pack = ACH_TXT[LANG] || ACH_TXT.en;
+  return pack[id] || ACH_TXT.en[id] || [id, ""];
+}
+var ACHS = {done:{}, prog:{}, streak:0, best:0, langs:{}, types:{}};
+try {
+  var savedAch = JSON.parse(localStorage.getItem("ddz-ach") || "null");
+  if (savedAch){
+    ACHS.done = savedAch.done || {};
+    ACHS.prog = savedAch.prog || {};
+    ACHS.streak = savedAch.streak || 0;
+    ACHS.langs = savedAch.langs || {};
+    ACHS.types = savedAch.types || {};
+    ACHS.best = savedAch.best || 0;
+  }
+} catch(e){}
+function achSave(){
+  try { localStorage.setItem("ddz-ach", JSON.stringify(ACHS)); } catch(e){}
+}
+function achDef(id){
+  for (var i = 0; i < ACH.length; i++) if (ACH[i].id === id) return ACH[i];
+  return null;
+}
+/* raise a counter; unlock the moment it reaches the goal */
+function achBump(id, n){
+  if (ACHS.done[id]) return;
+  var def = achDef(id);
+  if (!def) return;
+  ACHS.prog[id] = Math.max(ACHS.prog[id] || 0, 0) + (n === undefined ? 1 : n);
+  if (ACHS.prog[id] >= def.goal){
+    ACHS.done[id] = true;
+    achToast(id);
+  }
+  achSave();
+}
+/* set a counter outright (used by streaks, which can go down as well as up) */
+function achSet(id, value){
+  var def = achDef(id);
+  if (!def) return;
+  ACHS.prog[id] = Math.max(ACHS.prog[id] || 0, value);
+  if (!ACHS.done[id] && value >= def.goal){
+    ACHS.done[id] = true;
+    achToast(id);
+  }
+  achSave();
+}
+/* how many distinct languages this player has actually played in */
+function achLang(id){
+  if (!ACHS.langs) ACHS.langs = {};
+  if (!ACHS.langs[id]){
+    ACHS.langs[id] = 1;
+    achSet("polyglot", Object.keys(ACHS.langs).length);
+    achSave();
+  }
+}
+var toastQueue = [];
+function achToast(id){
+  toastQueue.push(id);
+  if (toastQueue.length === 1) toastNext();
+}
+function toastNext(){
+  if (!toastQueue.length) return;
+  var id = toastQueue[0], def = achDef(id), txt = achText(id);
+  var el = document.createElement("div");
+  el.className = "toast";
+  el.innerHTML = '<span class="ti">' + def.icon + "</span><span><b>" + t("achGot") +
+                 "</b><br>" + txt[0] + "</span>";
+  $("#toasts").appendChild(el);
+  sfxAchievement();
+  setTimeout(function(){ el.classList.add("out"); }, 3200);
+  setTimeout(function(){
+    el.remove();
+    toastQueue.shift();
+    toastNext();
+  }, 3700);
+}
+function sfxAchievement(){
+  if (!sfxReady()) return;
+  var at = MUSIC.ctx.currentTime + 0.001;
+  tone(at,        784, 784, 0.12, "triangle", 0.09);
+  tone(at + 0.10, 988, 988, 0.12, "triangle", 0.09);
+  tone(at + 0.20, 1319, 1319, 0.22, "triangle", 0.10);
+}
+/* watch our own plays for the combination-based ones */
+function achOnPlay(cb, cards){
+  if (cb.type === "straight"){
+    if (cb.len >= 8)  achBump("long_run");
+    if (cb.len >= 11) achBump("great_wall");
+  }
+  if (cb.type === "straight" && cb.len >= 12) achBump("full_run");
+  if (cb.type === "pairseq" && cb.len >= 5) achBump("pair_run");
+  /* every distinct kind of combination we have ever played */
+  if (!ACHS.types) ACHS.types = {};
+  if (!ACHS.types[cb.type]){
+    ACHS.types[cb.type] = 1;
+    achSet("encyclopedia", Object.keys(ACHS.types).length);
+  }
+  /* both jokers played separately rather than as the rocket */
+  if (cb.type === "single" && cards[0].rank >= 16){
+    G.myJokers = G.myJokers || {};
+    G.myJokers[cards[0].rank] = 1;
+    if (Object.keys(G.myJokers).length >= 2) achBump("split_kings");
+  }
+  if ((cb.type === "tripseq" || cb.type === "plane1" || cb.type === "plane2") && cb.len >= 3)
+    achBump("squadron");
+  if (cb.type === "quad1")  achBump("quad_two");
+  if (cb.type === "quad2")  achBump("quadplex");
+  if (cb.type === "plane2") achBump("airplane");
+  if (cb.type === "rocket"){
+    achBump("rocket");
+    G.myRocket = true;
+    if (G.myBombs) achBump("arsenal");
+  }
+  if (cb.type === "bomb"){
+    G.myBombs = (G.myBombs || 0) + 1;
+    if (G.myBombs >= 3) achBump("three_bombs");
+    if (G.myBombs >= 5) achBump("scorched");
+    if (G.myRocket) achBump("arsenal");
+    if (G.prevCombo && G.prevCombo.type === "bomb") achBump("bigger_bang");
+  }
+  /* the cards are already gone by the time we get here, so an empty hand means
+     this play was the one that finished the deal */
+  if (!G.hands[G.me].length){
+    if (cb.type === "bomb")   achBump("bang");
+    if (cb.type === "rocket") achBump("star_finish");
+    if (cards.length >= 8)    achBump("big_finish");
+  }
+}
+/* and the result for everything else */
+function achOnResult(r, youWon){
+  if (youWon){
+    ACHS.streak++;
+    ACHS.best = Math.max(ACHS.best, ACHS.streak);
+    achBump("first_win");
+    achBump("wins50");
+    achBump("wins200");
+    achSet("streak3", ACHS.streak);
+    achSet("streak6", ACHS.streak);
+    achSet("streak10", ACHS.streak);
+    if (r.landlord === G.me) achBump("landlord10"); else achBump("peasant10");
+    if (r.springTxt) achBump("spring");
+    if (r.springTxt && r.landlord !== G.me) achBump("rev_spring");
+    if (r.multiplier >= 16) achBump("sky_high");
+    if (r.bid === 3) achBump("all_in");
+    if (r.handBase >= 100) achBump("high_roller");
+    if (!G.myBombs && !G.myRocket) achBump("clean_hands");
+    if (G.plays[G.me] <= 5) achBump("blitz");
+    if (r.delta[G.me] >= 500) achBump("big_pot");
+    if (!G.myPasses) achBump("relentless");
+    if (G.chipsAtDeal !== undefined && G.chipsAtDeal <= 200) achBump("comeback");
+    if (PREFS.diff === "hard" && G.mode === "ai") achBump("hard_win");
+    if (PREFS.diff === "impossible" && G.mode === "ai") achBump("imp_win");
+  } else {
+    ACHS.streak = 0;
+    if (r.delta[G.me] <= -500) achBump("tuition");
+  }
+  if (G.chips[G.me] >= 5000) achBump("bank5000");
+  if (G.chips[G.me] >= 10000) achBump("bank10000");
+  achSave();
+}
+function showAchievements(){
+  var done = 0;
+  ACH.forEach(function(a){ if (ACHS.done[a.id]) done++; });
+  var rows = ACH.map(function(a){
+    var txt = achText(a.id), got = !!ACHS.done[a.id];
+    var prog = Math.min(ACHS.prog[a.id] || 0, a.goal);
+    var meter = (a.goal > 1 && !got) ? '<span class="apr">' + prog + "/" + a.goal + "</span>" : "";
+    return '<li class="' + (got ? "got" : "") + '"><span class="ai">' + (got ? a.icon : "🔒") +
+      '</span><span class="atx"><b>' + txt[0] + "</b><br><span>" + txt[1] + "</span></span>" + meter + "</li>";
+  }).join("");
+  showModal(
+    "<h2>" + t("achievements") + "</h2>" +
+    '<div class="sub">' + t("achCount", done, ACH.length) +
+      (ACHS.best ? " · " + t("achBest", ACHS.best) : "") + "</div>" +
+    '<ul class="achlist">' + rows + "</ul>" +
+    '<div class="row"><button class="gold" id="achclose">' + t("gotIt") + "</button></div>",
+    function(){
+      $("#achclose").addEventListener("click", function(){
+        hideModal();
+        if ($("#home").classList.contains("hidden")) showHome();
+      });
+    }
+  );
+}
+
+function showHome(){
+  G.epoch++;                       /* stop any hand still running behind the menu */
+  G.phase = "idle";
+  $("#homeBank").innerHTML = t("yourBank", fmt(G.chips[G.me]));
+  $("#home").classList.remove("hidden");
+  musicSet("menu");
+}
+function hideHome(){ $("#home").classList.add("hidden"); }
+function startVsAi(){
+  hideHome();
+  netLeave();                       /* a stale table must not reach into a solo game */
+  G.mode = "ai"; G.me = 0;
+  G.humans = [true, false, false];
+  G.names = [null, null, null];
+  newRound();
+}
+$("#modeAi").addEventListener("click", startVsAi);
+$("#modeOnline").addEventListener("click", showOnlineSetup);
+$("#homeAch").addEventListener("click", showAchievements);
+$("#homeSettings").addEventListener("click", showSettings);
+$("#homeRules").addEventListener("click", function(){
+  showModal(rulesHtml(), function(){ $("#mclose").addEventListener("click", hideModal); });
+});
+$("#btnmute").addEventListener("click", musicToggle);
+$("#btnrules").addEventListener("click", function(){
+  showModal(rulesHtml(), function(){ $("#mclose").addEventListener("click", hideModal); });
+});
+$("#btnnew").addEventListener("click", function(){
+  if (G.mode === "guest") return;             /* only the dealer starts hands */
+  if (G.phase === "idle") return;
+  hideModal(); newRound();
+});
+$("#btnexit").addEventListener("click", function(){
+  netLeave(); hideModal(); showHome();
+});
+window.addEventListener("resize", function(){ fitHand(); });
+/* ---------------------------------------------------------------------------
+   Click rescue.
+
+   Three separate reports of dialogs and the menu not responding, none of which
+   reproduce here — so rather than keep guessing which layer is at fault, this
+   catches the click at the document before anything can swallow it, looks at the
+   whole stack of elements under the pointer, and presses the button that is
+   actually there. If some invisible layer is covering a button, the button still
+   works. A click that already landed on a button is left completely alone.
+   --------------------------------------------------------------------------- */
+var rescuing = false;
+document.addEventListener("click", function(e){
+  if (rescuing) return;
+  var overlayOpen = !$("#overlay").classList.contains("hidden");
+  var homeOpen    = !$("#home").classList.contains("hidden");
+  if (!overlayOpen && !homeOpen) return;
+  var t = e.target;
+  if (t && t.closest && t.closest("button")) return;      /* landed properly — nothing to do */
+  if (!document.elementsFromPoint) return;
+  var stack = document.elementsFromPoint(e.clientX, e.clientY), i, el;
+  for (i = 0; i < stack.length; i++){
+    el = stack[i];
+    if (el.tagName === "BUTTON" && el.closest && (el.closest("#modal") || el.closest("#home"))){
+      rescuing = true;
+      try { el.click(); } finally { rescuing = false; }
+      return;
+    }
+  }
+}, true);
+
+/* The menu answers the keyboard as well, so there is always a way in. */
+document.addEventListener("keydown", function(e){
+  if ($("#home").classList.contains("hidden")) return;
+  if (!$("#overlay").classList.contains("hidden")) return;   /* a dialog owns the keys */
+  var k = e.key.toLowerCase();
+  var hit = k === "1" ? "modeAi" : k === "2" ? "modeOnline"
+          : k === "a" ? "homeAch" : k === "s" ? "homeSettings"
+          : (k === "r" || k === "h") ? "homeRules" : null;
+  if (hit){ e.preventDefault(); $("#" + hit).click(); }
+}, true);
+
+/* Dialogs answer the keyboard too, so a stuck pointer can never trap you in one. */
+document.addEventListener("keydown", function(e){
+  if ($("#overlay").classList.contains("hidden")) return;
+  var primary = document.querySelector("#modal button.gold");
+  var secondary = document.querySelector("#modal .row button.ghost");
+  if (e.key === "Enter" && primary){ e.preventDefault(); e.stopPropagation(); primary.click(); }
+  else if (e.key === "Escape"){
+    e.preventDefault(); e.stopPropagation();
+    (secondary || primary || {click:function(){}}).click();
+  }
+}, true);
+document.addEventListener("keydown", function(e){
+  if (!$("#overlay").classList.contains("hidden")) return;   /* a dialog owns the keys */
+  if (G.phase !== "play" || G.turn !== G.me) return;
+  if (e.key === "Enter"){ e.preventDefault(); doHumanPlay(); }
+  if (e.key === " "){ e.preventDefault(); doHumanPass(); }
+  if (e.key === "h" || e.key === "H"){ e.preventDefault(); hint(); }
+});
+(function(){
+  var code = new URLSearchParams(location.search).get("table");
+  if (code && location.protocol !== "file:") joinTable(code.toUpperCase());
+  else showHome();
+})();
+</script>
+</body>
+</html>
