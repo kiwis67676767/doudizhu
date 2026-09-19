@@ -2088,6 +2088,21 @@ function sbClient(){
   });
   return sb.loading;
 }
+/* announce ourselves to presence, retrying quietly if it does not take */
+function sbTrack(attempt){
+  if (!sb.table) return;
+  try {
+    sb.table.track({pid:NET.pid, at:Date.now()})["catch"](function(){});
+  } catch(e){}
+  if (attempt < 3){
+    setTimeout(function(){
+      if (!sb.table) return;
+      var st = {};
+      try { st = sb.table.presenceState() || {}; } catch(e){}
+      if (!st[NET.pid]) sbTrack(attempt + 1);
+    }, 1200);
+  }
+}
 function sbSubscribed(ch){
   return new Promise(function(resolve, reject){
     ch.subscribe(function(status){
@@ -2129,8 +2144,9 @@ var supabaseWire = {
       });
       return Promise.all([sbSubscribed(sb.table), sbSubscribed(sb.mine)]);
     }).then(function(){
-      return sb.table.track({pid:NET.pid, at:Date.now()});
-    }).then(function(){
+      /* Presence is a convenience, not part of the handshake. Gating the greeting on
+         it meant one failed track() left a player sitting in the lobby for ever. */
+      sbTrack(0);
       onMsg({t:"hello", pid:NET.pid, room:room}, "server");
     });
   },
@@ -2267,7 +2283,7 @@ function hostOnMsg(msg, from){
   }
 }
 function guestOnMsg(msg, from){
-  if (msg.t === "hello"){ netSend({t:"join", name: guestName()}); return; }
+  if (msg.t === "hello"){ guestKnock(0); return; }
   if (msg.t === "seated"){
     G.me = msg.seat; G.names = msg.names; NET.hostPid = msg.hostPid;
     renderLobby();
@@ -2280,6 +2296,12 @@ function guestOnMsg(msg, from){
   if (msg.t === "peer-left" && msg.pid === NET.hostPid){
     showNotice(t("closedT"), t("closedB"));
   }
+}
+/* A dropped join used to strand the guest in the lobby; ask again until seated. */
+function guestKnock(n){
+  if (G.mode !== "guest" || NET.hostPid) return;      /* seated, or no longer a guest */
+  netSend({t:"join", name: guestName()});
+  if (n < 6) setTimeout(function(){ guestKnock(n + 1); }, 2000);
 }
 function guestName(){
   var n = "";
