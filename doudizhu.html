@@ -263,6 +263,23 @@ button.mode .md{font-size:11.5px;color:#c3dccd;line-height:1.5;font-weight:400}
 }
 .seatlist .tag{margin-left:auto;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#a9c9b6}
 .seatlist .tag.here{color:#7ee0a0}
+.codebig{
+  display:flex;align-items:center;gap:12px;margin:14px 0 4px;padding:12px 14px;
+  background:rgba(0,0,0,.28);border:1px solid var(--gold2);border-radius:11px
+}
+.codebig .cl{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#a9c9b6}
+.codebig .cc{
+  flex:1;font-size:29px;font-weight:800;letter-spacing:.22em;color:var(--gold);
+  font-variant-numeric:tabular-nums;text-align:center
+}
+.codein{
+  display:block;width:100%;margin:14px 0 2px;padding:14px 10px;border-radius:11px;
+  background:rgba(0,0,0,.3);border:1px solid var(--gold2);color:var(--gold);
+  font:inherit;font-size:30px;font-weight:800;letter-spacing:.3em;text-align:center;
+  text-transform:uppercase;outline:none
+}
+.codein::placeholder{color:rgba(255,255,255,.25);letter-spacing:.2em}
+.joinerr{min-height:16px;font-size:12px;color:#ff9c9c;margin-top:6px}
 .linkbox{
   display:flex;gap:8px;align-items:center;margin:12px 0 4px;background:rgba(0,0,0,.3);
   border:1px solid var(--line);border-radius:9px;padding:9px 11px
@@ -451,6 +468,15 @@ en:{
   modeAiT:"Play the bots", modeAiD:"One seat for you, two for the AI. Works offline, nothing to set up.",
   modeOnT:"Play with friends", modeOnD:"Get a link to send round. Empty seats are filled by bots.",
   howTo:"How to play", yourBank:"Your bank <b>{0}</b> chips",
+  mpPick:"Start a table of your own, or join one with a code.",
+  mpCreate:"Create a table", mpCreateD:"You deal. Share the code and empty seats are filled by bots.",
+  mpJoin:"Join a table", mpJoinD:"Type the five-character code somebody gave you.",
+  joinTitle:"Join a table", joinSub:"Enter the table code.", joinBtn:"Join",
+  joinBad:"A table code is five letters and numbers.",
+  joinSearching:"Looking for table {0}\u2026",
+  joinNotFound:"No table with that code",
+  joinNotFoundB:"Nobody is hosting <b>{0}</b>. Check the code, or ask for a fresh one \u2014 a table closes when its dealer leaves.",
+  tableCodeLbl:"Table code", copyCode:"Copy code",
   yourTable:"Your table", joiningTable:"Joining table",
   tableIs:"Table <b>{0}</b> · empty seats are played by bots.",
   copy:"Copy", copied:"Copied", leave:"Leave", deal:"Deal",
@@ -526,6 +552,24 @@ zh:{
   modeAiT:"和电脑玩", modeAiD:"你一个座位，电脑两个。离线可玩，无需设置。",
   modeOnT:"和朋友玩", modeOnD:"生成链接发给朋友。空位由电脑补上。",
   howTo:"玩法说明", yourBank:"你的筹码 <b>{0}</b>",
+  mpPick:"开一桌，或者用房间码加入别人的牌桌。",
+  mpCreate:"开一桌", mpCreateD:"你当房主。把房间码发给朋友，空位由电脑补上。",
+  mpJoin:"加入牌桌", mpJoinD:"输入别人给你的五位房间码。",
+  joinTitle:"加入牌桌", joinSub:"请输入房间码。", joinBtn:"加入",
+  joinBad:"房间码是五位字母或数字。",
+  joinSearching:"正在寻找房间 {0}\u2026",
+  joinNotFound:"找不到这个房间",
+  joinNotFoundB:"没有人在开 <b>{0}</b>。请核对房间码，或者让对方重新开一桌 \u2014 房主离开后牌桌就关闭了。",
+  tableCodeLbl:"房间码", copyCode:"复制房间码",
+  mpPick:"開一桌，或者用房間碼加入別人的牌桌。",
+  mpCreate:"開一桌", mpCreateD:"你當房主。把房間碼發給朋友，空位由電腦補上。",
+  mpJoin:"加入牌桌", mpJoinD:"輸入別人給你的五位房間碼。",
+  joinTitle:"加入牌桌", joinSub:"請輸入房間碼。", joinBtn:"加入",
+  joinBad:"房間碼是五位字母或數字。",
+  joinSearching:"正在尋找房間 {0}\u2026",
+  joinNotFound:"找不到這個房間",
+  joinNotFoundB:"沒有人在開 <b>{0}</b>。請核對房間碼，或者讓對方重新開一桌 \u2014 房主離開後牌桌就關閉了。",
+  tableCodeLbl:"房間碼", copyCode:"複製房間碼",
   yourTable:"你的牌桌", joiningTable:"正在加入牌桌",
   tableIs:"房间 <b>{0}</b> · 空位由电脑补上。",
   copy:"复制", copied:"已复制", leave:"离开", deal:"发牌",
@@ -601,6 +645,15 @@ es:{
   modeAiT:"Jugar contra bots", modeAiD:"Un asiento para ti, dos para la IA. Funciona sin conexión.",
   modeOnT:"Jugar con amigos", modeOnD:"Consigue un enlace para compartir. Los asientos libres los cubren bots.",
   howTo:"Cómo se juega", yourBank:"Tu banca <b>{0}</b> fichas",
+  mpPick:"Abre tu propia mesa o entra en otra con un código.",
+  mpCreate:"Crear una mesa", mpCreateD:"Tú repartes. Comparte el código y los asientos libres los cubren bots.",
+  mpJoin:"Entrar en una mesa", mpJoinD:"Escribe el código de cinco caracteres que te han dado.",
+  joinTitle:"Entrar en una mesa", joinSub:"Escribe el código de la mesa.", joinBtn:"Entrar",
+  joinBad:"Un código de mesa son cinco letras y números.",
+  joinSearching:"Buscando la mesa {0}\u2026",
+  joinNotFound:"No hay ninguna mesa con ese código",
+  joinNotFoundB:"Nadie está abriendo <b>{0}</b>. Comprueba el código o pide uno nuevo \u2014 una mesa se cierra cuando quien reparte se va.",
+  tableCodeLbl:"Código de mesa", copyCode:"Copiar código",
   yourTable:"Tu mesa", joiningTable:"Entrando a la mesa",
   tableIs:"Mesa <b>{0}</b> · los asientos libres los juegan bots.",
   copy:"Copiar", copied:"Copiado", leave:"Salir", deal:"Repartir",
@@ -676,6 +729,24 @@ zhT:{
   modeAiT:"和電腦玩", modeAiD:"你一個座位，電腦兩個。離線可玩，無需設定。",
   modeOnT:"和朋友玩", modeOnD:"產生連結發給朋友。空位由電腦補上。",
   howTo:"玩法說明", yourBank:"你的籌碼 <b>{0}</b>",
+  mpPick:"开一桌，或者用房间码加入别人的牌桌。",
+  mpCreate:"开一桌", mpCreateD:"你当房主。把房间码发给朋友，空位由电脑补上。",
+  mpJoin:"加入牌桌", mpJoinD:"输入别人给你的五位房间码。",
+  joinTitle:"加入牌桌", joinSub:"请输入房间码。", joinBtn:"加入",
+  joinBad:"房间码是五位字母或数字。",
+  joinSearching:"正在寻找房间 {0}\u2026",
+  joinNotFound:"找不到这个房间",
+  joinNotFoundB:"没有人在开 <b>{0}</b>。请核对房间码，或者让对方重新开一桌 \u2014 房主离开后牌桌就关闭了。",
+  tableCodeLbl:"房间码", copyCode:"复制房间码",
+  mpPick:"開一桌，或者用房間碼加入別人的牌桌。",
+  mpCreate:"開一桌", mpCreateD:"你當房主。把房間碼發給朋友，空位由電腦補上。",
+  mpJoin:"加入牌桌", mpJoinD:"輸入別人給你的五位房間碼。",
+  joinTitle:"加入牌桌", joinSub:"請輸入房間碼。", joinBtn:"加入",
+  joinBad:"房間碼是五位字母或數字。",
+  joinSearching:"正在尋找房間 {0}\u2026",
+  joinNotFound:"找不到這個房間",
+  joinNotFoundB:"沒有人在開 <b>{0}</b>。請核對房間碼，或者讓對方重新開一桌 \u2014 房主離開後牌桌就關閉了。",
+  tableCodeLbl:"房間碼", copyCode:"複製房間碼",
   yourTable:"你的牌桌", joiningTable:"正在加入牌桌",
   tableIs:"房間 <b>{0}</b> · 空位由電腦補上。",
   copy:"複製", copied:"已複製", leave:"離開", deal:"發牌",
@@ -2022,9 +2093,10 @@ var SUPABASE_ANON_KEY = "sb_publishable_M_2ulkT4TYW28zQPFV_ewg_OuPYdBBQ";
 function supabaseConfigured(){ return !!(SUPABASE_URL && SUPABASE_ANON_KEY); }
 
 function netId(){ return Math.random().toString(36).slice(2, 10); }
+var CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";   /* no I/O/0/1 — easy to read aloud */
 function tableCode(){
-  var A = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789", c = "", i;   /* no I/O/0/1 */
-  for (i = 0; i < 5; i++) c += A[Math.floor(Math.random() * A.length)];
+  var c = "", i;
+  for (i = 0; i < 5; i++) c += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)];
   return c;
 }
 function netPost(url, body){
@@ -2325,9 +2397,66 @@ function showServerHelp(){
     '<div class="row"><button class="gold" id="mclose3">' + t("gotIt") + "</button></div>",
     function(){ $("#mclose3").addEventListener("click", function(){ hideModal(); showHome(); }); });
 }
+/* Choose between starting a table and joining someone else's. */
 function showOnlineSetup(){
-  /* Supabase needs no server of ours, so a file:// page can host a table too */
   if (!supabaseConfigured() && location.protocol === "file:") return showServerHelp();
+  showModal(
+    "<h2>" + t("modeOnT") + "</h2>" +
+    '<div class="sub">' + t("mpPick") + "</div>" +
+    '<div class="modes">' +
+      '<button class="mode" id="mpCreate"><span class="mi">🎴</span>' +
+        '<span class="mt">' + t("mpCreate") + "</span>" +
+        '<span class="md">' + t("mpCreateD") + "</span></button>" +
+      '<button class="mode" id="mpJoin"><span class="mi">🔑</span>' +
+        '<span class="mt">' + t("mpJoin") + "</span>" +
+        '<span class="md">' + t("mpJoinD") + "</span></button>" +
+    "</div>" +
+    '<div class="row"><button class="ghost" id="mpBack">' + t("backMenu") + "</button></div>",
+    function(){
+      $("#mpCreate").addEventListener("click", createTable);
+      $("#mpJoin").addEventListener("click", showJoinByCode);
+      $("#mpBack").addEventListener("click", function(){ hideModal(); showHome(); });
+    }
+  );
+}
+
+/* Type in the code somebody read out to you. */
+function showJoinByCode(){
+  showModal(
+    "<h2>" + t("joinTitle") + "</h2>" +
+    '<div class="sub">' + t("joinSub") + "</div>" +
+    '<input id="joinCode" class="codein" maxlength="5" autocomplete="off" autocapitalize="characters" ' +
+      'spellcheck="false" placeholder="- - - - -">' +
+    '<div class="joinerr" id="joinErr"></div>' +
+    '<div class="row"><button class="ghost" id="joinBack">' + t("backMenu") + "</button>" +
+    '<button class="gold" id="joinGo">' + t("joinBtn") + "</button></div>",
+    function(){
+      var input = $("#joinCode");
+      function clean(){
+        var v = (input.value || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+        v = v.split("").filter(function(ch){ return CODE_CHARS.indexOf(ch) >= 0; }).join("");
+        input.value = v.slice(0, 5);
+      }
+      function go(){
+        clean();
+        if (input.value.length !== 5){
+          $("#joinErr").textContent = t("joinBad");
+          input.focus();
+          return;
+        }
+        hideModal();
+        joinTable(input.value);
+      }
+      input.addEventListener("input", function(){ clean(); $("#joinErr").textContent = ""; });
+      input.addEventListener("keydown", function(e){ if (e.key === "Enter"){ e.preventDefault(); go(); } });
+      $("#joinGo").addEventListener("click", go);
+      $("#joinBack").addEventListener("click", function(){ hideModal(); showOnlineSetup(); });
+      setTimeout(function(){ try { input.focus(); } catch(e){} }, 60);
+    }
+  );
+}
+
+function createTable(){
   hideHome();
   G.epoch++; G.phase = "idle";          /* abandon any hand still running behind the menu */
   NET.wire = pickWire();
@@ -2359,16 +2488,24 @@ function renderLobby(){
   }).join("");
   showModal(
     "<h2>" + (dealer ? t("yourTable") : t("joiningTable")) + "</h2>" +
-    '<div class="sub">' + t("tableIs", NET.room || "…") + "</div>" +
+    '<div class="sub">' + ((!dealer && !NET.hostPid) ? t("joinSearching", NET.room || "")
+                                                          : t("tableIs", NET.room || "…")) + "</div>" +
     '<ul class="seatlist">' + seats + "</ul>" +
     (dealer
-      ? '<div class="linkbox"><input id="lnk" readonly value="' + shareLink() + '">' +
+      ? '<div class="codebig"><div class="cl">' + t("tableCodeLbl") + "</div>" +
+        '<div class="cc" id="tcode">' + (NET.room || "…") + "</div>" +
+        '<button class="ghost" id="codecopy">' + t("copyCode") + "</button></div>" +
+        '<div class="linkbox"><input id="lnk" readonly value="' + shareLink() + '">' +
         '<button class="ghost" id="lnkcopy">' + t("copy") + "</button></div>" +
         '<div class="hostnote">' + t("hostNote") + "</div>"
-      : '<div class="sub">' + t("waitStart") + "</div>") +
+      : (NET.hostPid ? '<div class="sub">' + t("waitStart") + "</div>" : "")) +
     '<div class="row"><button class="ghost" id="lobbyback">' + t("leave") + "</button>" +
     (dealer ? '<button class="gold" id="lobbystart">' + t("deal") + "</button>" : "") + "</div>",
     function(){
+      if ($("#codecopy")) $("#codecopy").addEventListener("click", function(){
+        try { navigator.clipboard.writeText(NET.room); } catch(e){}
+        $("#codecopy").textContent = t("copied");
+      });
       if ($("#lnkcopy")) $("#lnkcopy").addEventListener("click", function(){
         var i = $("#lnk"); i.select();
         try { navigator.clipboard.writeText(i.value); } catch(e){ try { document.execCommand("copy"); } catch(e2){} }
@@ -2389,12 +2526,22 @@ function netLeave(){
   if (NET.wire){ try { NET.wire.leave(); } catch(e){} }
   NET = {room:null, pid:null, es:null, hostPid:null, seatPid:[null,null,null], urls:[], wire:null};
 }
+var joinAttempt = 0;
 function joinTable(code){
   hideHome();
   G.epoch++; G.phase = "idle";
   G.mode = "guest"; G.me = 1;
   netConnect(code, guestOnMsg);
   renderLobby();
+  /* Nothing validates a code — you simply listen on that channel — so if nobody
+     answers after the knocks have run their course, say so instead of hanging. */
+  var mine = ++joinAttempt;
+  setTimeout(function(){
+    if (mine !== joinAttempt) return;
+    if (G.mode !== "guest" || NET.hostPid) return;
+    netLeave();
+    showNotice(t("joinNotFound"), t("joinNotFoundB", code));
+  }, 16000);
 }
 
 function stakeOptions(){
