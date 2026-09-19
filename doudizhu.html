@@ -145,6 +145,8 @@ button.ghost{font-size:12px;padding:5px 11px}
 .card.mini .big{font-size:15px} .card.mini.joker .jk{font-size:7px;width:9px;top:11px}
 .card.facedown{background:repeating-linear-gradient(45deg,#a3272f 0 5px,#7d1c23 5px 10px);box-shadow:0 2px 5px rgba(0,0,0,.45),inset 0 0 0 2px rgba(255,255,255,.35)}
 .card.facedown *{display:none}
+@keyframes flipin{from{transform:rotateY(90deg) scale(.9);opacity:0}to{transform:none;opacity:1}}
+.flipin{animation:flipin .34s ease-out both}
 @keyframes dealin{from{opacity:0;transform:translateY(26px) scale(.85)}to{opacity:1;transform:none}}
 #board .cards .card{animation:dealin .18s ease-out both}
 
@@ -1247,14 +1249,30 @@ function renderHand(){
   fitHand();
 }
 function renderKitty(){
-  /* the three stay face down all round — the landlord takes them without showing
-     the other players, so the values never reach the DOM at all */
-  var k = $("#kittycards"), i;
-  if (k.dataset.n === String(G.kitty.length)) return;
-  k.dataset.n = String(G.kitty.length);
+  /* At a table with other people the three are turned over once the landlord is
+     settled, so everyone can see what they picked up. On your own they stay face
+     down — the values never even reach the page. */
+  var k = $("#kittycards"), i, el;
+  var reveal = (G.mode !== "ai") && G.landlord >= 0 &&
+               G.kitty.length && G.kitty[0] && G.kitty[0].rank !== undefined;
+  var sig = reveal ? "up:" + G.kitty.map(function(c){ return c.id; }).join(",")
+                   : "down:" + G.kitty.length;
+  if (k.dataset.sig === sig) return;
+  k.dataset.sig = sig;
   k.innerHTML = "";
+  if (reveal){
+    var cs = G.kitty.slice();
+    cs.sort(function(a,b){ return b.rank - a.rank || a.suit - b.suit; });
+    cs.forEach(function(c, n){
+      var e = cardEl(c, "mini");
+      e.style.animationDelay = (n * 90) + "ms";
+      e.classList.add("flipin");
+      k.appendChild(e);
+    });
+    return;
+  }
   for (i = 0; i < G.kitty.length; i++){
-    var el = document.createElement("div");
+    el = document.createElement("div");
     el.className = "card mini facedown";
     k.appendChild(el);
   }
@@ -1977,8 +1995,10 @@ function endRound(winner){
 
 /* Renders the settlement for whoever is looking at it — dealer, guest or solo — from
    the same payload, so every seat sees the identical accounting. */
+var resultOpen = false;
 function showResult(r){
   G.phase = "over";
+  resultOpen = true;
   G.chips = r.chips.slice();
   if (G.mode !== "guest") saveBank();
   renderMoney();
@@ -2068,6 +2088,7 @@ function showModal(html, after){
 }
 function hideModal(){
   lobbySig = lobbySeatSig = null;
+  resultOpen = false;
   $("#overlay").classList.add("hidden");
   if (homeWasOpen){
     homeWasOpen = false;
@@ -2207,7 +2228,22 @@ var relayWire = {
    security: the dealer is trusted in this design. Realtime Authorization would make
    it enforceable, and needs no game data in the database. */
 var SB_CDN = "https://esm.sh/@supabase/supabase-js@2";
-var sb = {client:null, table:null, mine:null, lobby:null, loading:null};
+var sb = {client:null, table:null, mine:null, lobby:null, loading:null, out:{}};
+
+/* One live channel per player we send to, kept and reused.
+   Asking the client for a channel by topic hands back the SAME object, so making
+   one per message eventually returned a closed one and every addressed update
+   after that was dropped — the dealer and a player then disagreed about whose
+   turn it was and the hand stopped dead. */
+function sbOut(to){
+  var e = sb.out[to];
+  if (e && e.ch.state !== "closed" && e.ch.state !== "errored") return e.ready;
+  if (e && sb.client){ try { sb.client.removeChannel(e.ch); } catch(err){} }
+  var ch = sb.client.channel("ddz:p:" + to, {config:{broadcast:{self:false}}});
+  var ready = sbSubscribed(ch).then(function(){ return ch; })["catch"](function(){ return ch; });
+  sb.out[to] = {ch:ch, ready:ready};
+  return ready;
+}
 
 function sbClient(){
   if (sb.client) return Promise.resolve(sb.client);
@@ -2355,16 +2391,19 @@ var supabaseWire = {
     var env = {type:"broadcast", event:"msg", payload:{from:NET.pid, msg:msg}};
     if (to){
       if (!sb.client) return;
-      sb.client.channel("ddz:p:" + to, {config:{broadcast:{self:false}}}).send(env);
+      sbOut(to).then(function(ch){ try { ch.send(env); } catch(e){} });
       return;
     }
     if (sb.table) sb.table.send(env);
   },
   leave: function(){
-    [sb.table, sb.mine, sb.lobby].forEach(function(ch){
+    var all = [sb.table, sb.mine, sb.lobby];
+    Object.keys(sb.out).forEach(function(k){ all.push(sb.out[k].ch); });
+    all.forEach(function(ch){
       if (ch && sb.client){ try { sb.client.removeChannel(ch); } catch(e){} }
     });
     sb.table = sb.mine = sb.lobby = null;
+    sb.out = {};
   }
 };
 
@@ -2384,6 +2423,7 @@ function buildView(p){
     t:"view", me:p, phase:G.phase, turn:G.turn, landlord:G.landlord, bid:G.bid,
     multiplier:G.multiplier, bombs:G.bombs, handBase:G.handBase, base:G.base,
     chips:G.chips, names:G.names, humans:G.humans, kitty:G.kitty.length,
+    kittyCards: (G.landlord >= 0) ? G.kitty : null,   /* turned over once it is decided */
     counts:[G.hands[0].length, G.hands[1].length, G.hands[2].length],
     hand:G.hands[p],                                   /* only ever this player's own cards */
     last:G.last ? {cards:G.last.cards, player:G.last.player} : null,
@@ -2397,13 +2437,16 @@ function applyView(v){
   G.bid = v.bid; G.multiplier = v.multiplier; G.bombs = v.bombs;
   G.handBase = v.handBase; G.base = v.base;
   G.chips = v.chips; G.names = v.names; G.humans = v.humans;
-  G.kitty = new Array(v.kitty);
+  G.kitty = v.kittyCards ? v.kittyCards : new Array(v.kitty);
   G.hands = [0,1,2].map(function(i){ return i === v.me ? v.hand : new Array(v.counts[i]); });
   G.last = v.last ? {cards:v.last.cards, player:v.last.player, combo:parseCombo(v.last.cards)} : null;
   G.display = v.display;
   G.auction = v.auction ? {high:v.auction.high, highBidder:-1, passes:0, seen:0} : null;
   hideHome();
-  hideModal();
+  /* The dealer keeps broadcasting while the result is up. Closing the dialog on
+     every update meant the other players never got to read the score — it has to
+     stay until the next hand is actually dealt. */
+  if (!resultOpen || v.phase === "auction" || v.phase === "reveal" || v.phase === "idle") hideModal();
   render();
   if (G.phase === "play" || G.phase === "auction"){
     if (G.turn === G.me){
