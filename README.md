@@ -48,6 +48,23 @@ The same wifi is usually enough; over the internet, put a tunnel in front of the
 - **Settings** for language, difficulty, card size, table colour, music and effects.
 - Music and sound effects synthesised in the browser with the Web Audio API.
 
+## Multiplayer over Supabase
+
+Filling in `SUPABASE_URL` and `SUPABASE_ANON_KEY` near the top of `doudizhu.html`
+switches multiplayer onto Supabase Realtime, and `server.js` is no longer needed —
+tables work from any static host, including Netlify.
+
+- table messages travel on a broadcast channel per table
+- each player's own cards go on a channel of their own, never the shared one
+- Presence handles seating and disconnects
+- no database tables, no auth, nothing stored — the publishable key is enough
+
+**What this does not do:** the dealer's browser holds every hand, so the dealer can
+see them, and player ids are visible in presence, so a player at the table could
+subscribe to another player's channel and read their cards. Fine among friends,
+not fine against strangers. Closing that properly means Realtime Authorization
+policies with signed-in users — no game data in the database either way.
+
 ## Deploying
 
 The game is static, so any static host will do. This repo carries a `netlify.toml`

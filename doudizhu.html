@@ -2004,27 +2004,161 @@ var RULES_OLD =
    The server is a dumb relay. Whoever opens the table is the dealer: they run the
    rules and send each player only their own cards, so no hand is ever transmitted
    to somebody who should not see it. Empty seats are played by bots. */
-var NET = {room:null, pid:null, es:null, hostPid:null, seatPid:[null,null,null], urls:[]};
+/* ======================= the wire =======================
+   Everything above this line talks in messages — join / seated / act / view /
+   result — and does not care how they travel. Two carriers implement that:
+
+     relay     the bundled server.js, for a table on your own machine
+     supabase  Realtime broadcast, so a table works with no server at all
+
+   Adding a carrier means implementing create/connect/send/leave, nothing more. */
+var NET = {room:null, pid:null, es:null, hostPid:null, seatPid:[null,null,null], urls:[], wire:null};
+
+/* Fill these in to play over the internet with no server of your own. Both values
+   come from your Supabase project's Settings → API. The anon key is meant to live
+   in client code; the service_role key must never appear here. */
+var SUPABASE_URL = "https://talisstwpkvjxqmhgffp.supabase.co";
+var SUPABASE_ANON_KEY = "sb_publishable_M_2ulkT4TYW28zQPFV_ewg_OuPYdBBQ";
+function supabaseConfigured(){ return !!(SUPABASE_URL && SUPABASE_ANON_KEY); }
 
 function netId(){ return Math.random().toString(36).slice(2, 10); }
+function tableCode(){
+  var A = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789", c = "", i;   /* no I/O/0/1 */
+  for (i = 0; i < 5; i++) c += A[Math.floor(Math.random() * A.length)];
+  return c;
+}
 function netPost(url, body){
   return fetch(url, {method:"POST", headers:{"content-type":"application/json"},
                      body:JSON.stringify(body)}).then(function(r){ return r.json(); });
 }
+
+/* ---- carrier: the bundled relay server ---- */
+var relayWire = {
+  name: "relay",
+  create: function(){
+    return netPost("/r/new", {}).then(function(r){
+      NET.urls = r.urls || [];
+      return r.room;
+    });
+  },
+  connect: function(room, onMsg){
+    NET.room = room;
+    NET.pid  = netId();
+    NET.es   = new EventSource("/r/sub?room=" + encodeURIComponent(room) + "&pid=" + NET.pid);
+    NET.es.onmessage = function(e){
+      var env;
+      try { env = JSON.parse(e.data); } catch(err){ return; }
+      if (env && env.msg) onMsg(env.msg, env.from);
+    };
+    NET.es.onerror = function(){ /* EventSource retries by itself */ };
+    return Promise.resolve();
+  },
+  send: function(msg, to){
+    netPost("/r/pub", {room:NET.room, from:NET.pid, to:to || null, msg:msg})["catch"](function(){});
+  },
+  leave: function(){
+    if (NET.es){ try { NET.es.close(); } catch(e){} }
+    NET.es = null;
+  }
+};
+
+/* ---- carrier: Supabase Realtime ----
+   The client is fetched only when somebody actually opens a table, so playing the
+   bots stays a single file with no network at all.
+
+   Messages addressed to one player go on that player's own channel rather than the
+   table channel, because a broadcast reaches every subscriber — otherwise a curious
+   player could read the hands dealt to everyone else. That is obscurity, not
+   security: the dealer is trusted in this design. Realtime Authorization would make
+   it enforceable, and needs no game data in the database. */
+var SB_CDN = "https://esm.sh/@supabase/supabase-js@2";
+var sb = {client:null, table:null, mine:null, lobby:null, loading:null};
+
+function sbClient(){
+  if (sb.client) return Promise.resolve(sb.client);
+  if (sb.loading) return sb.loading;
+  sb.loading = import(/* webpackIgnore: true */ SB_CDN).then(function(mod){
+    sb.client = mod.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: {persistSession:false},
+      realtime: {params:{eventsPerSecond:20}}
+    });
+    /* No sign-in: broadcast and presence work on the publishable key alone, and
+       nothing is stored against a user anyway. */
+    return sb.client;
+  });
+  return sb.loading;
+}
+function sbSubscribed(ch){
+  return new Promise(function(resolve, reject){
+    ch.subscribe(function(status){
+      if (status === "SUBSCRIBED") resolve(ch);
+      else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") reject(new Error(status));
+    });
+  });
+}
+var supabaseWire = {
+  name: "supabase",
+  create: function(){
+    NET.urls = [location.origin];          /* the share link is this page */
+    return Promise.resolve(tableCode());
+  },
+  connect: function(room, onMsg){
+    NET.room = room;
+    NET.pid  = netId();
+    return sbClient().then(function(c){
+      /* everyone at the table hears this one */
+      sb.table = c.channel("ddz:t:" + room, {config:{broadcast:{self:false}, presence:{key:NET.pid}}});
+      sb.table.on("broadcast", {event:"msg"}, function(p){
+        if (p && p.payload && p.payload.msg) onMsg(p.payload.msg, p.payload.from);
+      });
+      /* presence replaces the relay's join/leave bookkeeping for free */
+      sb.table.on("presence", {event:"join"}, function(e){
+        (e.newPresences || []).forEach(function(pr){
+          if (pr.pid && pr.pid !== NET.pid) onMsg({t:"peer-joined", pid:pr.pid}, pr.pid);
+        });
+      });
+      sb.table.on("presence", {event:"leave"}, function(e){
+        (e.leftPresences || []).forEach(function(pr){
+          if (pr.pid) onMsg({t:"peer-left", pid:pr.pid}, pr.pid);
+        });
+      });
+      /* and this one is just for us */
+      sb.mine = c.channel("ddz:p:" + NET.pid, {config:{broadcast:{self:false}}});
+      sb.mine.on("broadcast", {event:"msg"}, function(p){
+        if (p && p.payload && p.payload.msg) onMsg(p.payload.msg, p.payload.from);
+      });
+      return Promise.all([sbSubscribed(sb.table), sbSubscribed(sb.mine)]);
+    }).then(function(){
+      return sb.table.track({pid:NET.pid, at:Date.now()});
+    }).then(function(){
+      onMsg({t:"hello", pid:NET.pid, room:room}, "server");
+    });
+  },
+  send: function(msg, to){
+    var env = {type:"broadcast", event:"msg", payload:{from:NET.pid, msg:msg}};
+    if (to){
+      if (!sb.client) return;
+      sb.client.channel("ddz:p:" + to, {config:{broadcast:{self:false}}}).send(env);
+      return;
+    }
+    if (sb.table) sb.table.send(env);
+  },
+  leave: function(){
+    [sb.table, sb.mine, sb.lobby].forEach(function(ch){
+      if (ch && sb.client){ try { sb.client.removeChannel(ch); } catch(e){} }
+    });
+    sb.table = sb.mine = sb.lobby = null;
+  }
+};
+
+function pickWire(){ return supabaseConfigured() ? supabaseWire : relayWire; }
 function netSend(msg, to){
-  if (!NET.room) return;
-  netPost("/r/pub", {room:NET.room, from:NET.pid, to:to || null, msg:msg})["catch"](function(){});
+  if (!NET.room || !NET.wire) return;
+  NET.wire.send(msg, to);
 }
 function netConnect(room, onMsg){
-  NET.room = room;
-  NET.pid  = netId();
-  NET.es   = new EventSource("/r/sub?room=" + encodeURIComponent(room) + "&pid=" + NET.pid);
-  NET.es.onmessage = function(e){
-    var env;
-    try { env = JSON.parse(e.data); } catch(err){ return; }
-    if (env && env.msg) onMsg(env.msg, env.from);
-  };
-  NET.es.onerror = function(){ /* EventSource retries by itself */ };
+  NET.wire = NET.wire || pickWire();
+  return NET.wire.connect(room, onMsg);
 }
 
 /* ---- what each player is allowed to see ---- */
@@ -2170,18 +2304,20 @@ function showServerHelp(){
     function(){ $("#mclose3").addEventListener("click", function(){ hideModal(); showHome(); }); });
 }
 function showOnlineSetup(){
-  if (location.protocol === "file:") return showServerHelp();
+  /* Supabase needs no server of ours, so a file:// page can host a table too */
+  if (!supabaseConfigured() && location.protocol === "file:") return showServerHelp();
   hideHome();
   G.epoch++; G.phase = "idle";          /* abandon any hand still running behind the menu */
-  netPost("/r/new", {}).then(function(r){
-    NET.urls = r.urls || [];
+  NET.wire = pickWire();
+  NET.wire.create().then(function(room){
     G.mode = "host"; G.me = 0;
     G.humans = [true, false, false];
     G.names = [null, null, null];
     G.chips = [START_CHIPS, START_CHIPS, START_CHIPS];
-    netConnect(r.room, hostOnMsg);
-    NET.seatPid[0] = NET.pid;
-    renderLobby();
+    return netConnect(room, hostOnMsg).then(function(){
+      NET.seatPid[0] = NET.pid;
+      renderLobby();
+    });
   })["catch"](function(){ showServerHelp(); });
 }
 function shareLink(){
@@ -2228,8 +2364,8 @@ function renderLobby(){
   );
 }
 function netLeave(){
-  if (NET.es) { try { NET.es.close(); } catch(e){} }
-  NET = {room:null, pid:null, es:null, hostPid:null, seatPid:[null,null,null], urls:[]};
+  if (NET.wire){ try { NET.wire.leave(); } catch(e){} }
+  NET = {room:null, pid:null, es:null, hostPid:null, seatPid:[null,null,null], urls:[], wire:null};
 }
 function joinTable(code){
   hideHome();
