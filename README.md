@@ -1,7 +1,7 @@
 # 斗地主 · Dou Dizhu (Fight the Landlord)
 
 A complete Dou Dizhu game in a single self-contained HTML file — no build step, no
-dependencies, no assets to download. Open `doudizhu.html` in a browser and play.
+dependencies, no assets to download. Open `index.html` in a browser and play.
 
 ![players](https://img.shields.io/badge/players-3-informational)
 ![deck](https://img.shields.io/badge/deck-54%20cards-informational)
@@ -9,7 +9,7 @@ dependencies, no assets to download. Open `doudizhu.html` in a browser and play.
 
 ## Playing
 
-Open `doudizhu.html` directly — that is the whole game. One seat is yours, the other
+Open `index.html` directly — that is the whole game. One seat is yours, the other
 two are bots.
 
 Rules follow [pagat.com](https://www.pagat.com/climbing/doudizhu.html): 54 cards, 17
@@ -50,7 +50,7 @@ The same wifi is usually enough; over the internet, put a tunnel in front of the
 
 ## Multiplayer over Supabase
 
-Filling in `SUPABASE_URL` and `SUPABASE_ANON_KEY` near the top of `doudizhu.html`
+Filling in `SUPABASE_URL` and `SUPABASE_ANON_KEY` near the top of `index.html`
 switches multiplayer onto Supabase Realtime, and `server.js` is no longer needed —
 tables work from any static host, including Netlify.
 
@@ -67,9 +67,10 @@ policies with signed-in users — no game data in the database either way.
 
 ## Deploying
 
-The game is static, so any static host will do. This repo carries a `netlify.toml`
-that publishes the root and rewrites `/` to `doudizhu.html`, so connecting the repo
-to Netlify is enough — every push to `main` redeploys.
+The game is static and the whole thing is `index.html`, so it needs no build step
+and no host-specific configuration — point Vercel, Netlify, GitHub Pages or any
+other static host at the repo and it serves. `vercel.json` only sets a couple of
+response headers. Every push to `main` redeploys.
 
 The bots work exactly as they do locally. **Link-based multiplayer does not**: it
 needs `server.js`, which keeps long-lived connections and in-memory table state that
@@ -79,5 +80,5 @@ static hosting cannot provide. Run that locally when you want to play with frien
 
 | | |
 |---|---|
-| `doudizhu.html` | the entire game — rules, AI, UI, audio, translations |
+| `index.html` | the entire game — rules, AI, UI, audio, translations |
 | `server.js` | optional table server for link-based multiplayer |

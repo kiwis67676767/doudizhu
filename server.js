@@ -138,7 +138,7 @@ const server = http.createServer(async function(req, res){
   }
 
   /* ---- static files ---- */
-  let file = p === "/" ? "/doudizhu.html" : p;
+  let file = p === "/" ? "/index.html" : p;
   file = path.normalize(file).replace(/^(\.\.[/\\])+/, "");
   const full = path.join(ROOT, file);
   if (!full.startsWith(ROOT)) return send(res, 403, "forbidden", "text/plain");
