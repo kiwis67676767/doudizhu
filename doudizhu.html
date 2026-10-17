@@ -211,9 +211,40 @@ kbd{background:rgba(255,255,255,.12);border-radius:4px;padding:1px 5px;font-size
 #fx{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:20}
 /* Full width of the table, so a percentage translate is a share of the TABLE and
    the whole flight stays inside the layer instead of being clipped away. */
-.fxflyer{position:absolute;left:0;width:100%;font-size:46px;line-height:1;will-change:transform,opacity}
-.fxflyer .g{display:inline-block}
+.fxflyer{position:absolute;left:0;width:100%;line-height:1;will-change:transform,opacity}
+.fxflyer .g{display:inline-block;filter:drop-shadow(0 6px 10px rgba(0,0,0,.5))}
 .fxflyer.rev .g{transform:scaleX(-1)}
+/* vapour hanging behind the plane */
+.fxtrail{
+  position:absolute;height:5px;border-radius:5px;transform-origin:left center;
+  background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.5));
+  filter:blur(2px);animation:trailgo 1.6s linear both
+}
+.fxtrail.rev{transform:scaleX(-1);transform-origin:right center}
+@keyframes trailgo{
+  0%{opacity:0;width:0} 18%{opacity:.75} 70%{opacity:.5;width:34%} 100%{opacity:0;width:44%}
+}
+/* the white punch of a detonation */
+.fxflash{position:absolute;inset:0;background:radial-gradient(circle at var(--fx) var(--fy),
+  rgba(255,255,235,.92),rgba(255,210,140,.35) 28%,rgba(255,255,255,0) 60%);
+  animation:flashout .42s ease-out both}
+@keyframes flashout{0%{opacity:0}12%{opacity:1}100%{opacity:0}}
+/* debris that actually falls */
+@keyframes debris{
+  0%{transform:translate(0,0) rotate(0) scale(1);opacity:1}
+  100%{transform:translate(var(--dx),var(--dy)) rotate(var(--rot)) scale(.4);opacity:0}
+}
+.fxbit{position:absolute;width:10px;height:14px;border-radius:2px;background:#ffd98a;
+  animation:debris .95s cubic-bezier(.2,.5,.5,1) both}
+.fxbit.hot{background:#ff9a6a}
+.fxbit.round{width:8px;height:8px;border-radius:50%}
+/* the played cards react to their own flourish */
+@keyframes cardpulse{
+  0%{transform:scale(1);filter:none}
+  35%{transform:scale(1.14);filter:drop-shadow(0 0 16px rgba(255,214,140,.95))}
+  100%{transform:scale(1);filter:none}
+}
+.fxpulse{animation:cardpulse .55s ease-out both}
 @keyframes flyacross{
   0%{transform:translate(-16%,0) rotate(-6deg) scale(.82);opacity:0}
   14%{opacity:1} 86%{opacity:1}
@@ -244,8 +275,9 @@ kbd{background:rgba(255,255,255,.12);border-radius:4px;padding:1px 5px;font-size
   100%{transform:translateX(130%) skewX(-18deg);opacity:0}
 }
 .fxsweep{
-  position:absolute;left:0;top:26%;width:55%;height:130px;filter:blur(2px);
-  background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,236,190,.42),rgba(255,255,255,0));
+  position:absolute;left:0;top:22%;width:60%;height:150px;filter:blur(1px);
+  background:linear-gradient(90deg,rgba(255,255,255,0) 0%,rgba(255,240,205,.30) 35%,
+             rgba(255,255,255,.75) 50%,rgba(255,240,205,.30) 65%,rgba(255,255,255,0) 100%);
   animation:sweep .85s cubic-bezier(.3,0,.2,1) both
 }
 @keyframes shakeit{
@@ -2082,6 +2114,7 @@ function showResult(r){
       (k === r.landlord ? t("landlordCol") : "") + "</td><td class=\"" + (r.delta[k] >= 0 ? "pos" : "neg") + "\">" +
       (r.delta[k] >= 0 ? "+" : "") + fmt(r.delta[k]) + "</td><td>" + fmt(r.chips[k]) + "</td></tr>";
   }).join("");
+  if (youWon){ if (fxOn()) fxConfetti(); sfxFanfare(); }
   var dealer = G.mode !== "guest";
   var broke = dealer && G.chips[G.me] <= 0;
   var stakeRow = '<div class="stakes">' + STAKES.map(function(v){
@@ -3031,7 +3064,7 @@ var TRACKS = {
     bass: expandSeq([[48,8],[48,8],[43,8],[43,8],[45,8],[45,8],[43,8],[48,8]], 64)
   }
 };
-var MUSIC = {ctx:null, master:null, sfx:null, timer:null, track:null, want:null, step:0, nextAt:0, noise:null};
+var MUSIC = {ctx:null, master:null, sfx:null, verb:null, send:null, timer:null, track:null, want:null, step:0, nextAt:0, noise:null};
 function hz(midi){ return 440 * Math.pow(2, (midi - 69) / 12); }
 
 function audioBoot(){
@@ -3047,6 +3080,26 @@ function audioBoot(){
     var comp = MUSIC.ctx.createDynamicsCompressor();
     MUSIC.master.connect(comp);
     MUSIC.sfx.connect(comp);
+    /* A short room, built from decaying noise. Without it every effect sounds
+       like it happened inside a box pressed against your ear. */
+    try {
+      var sr = MUSIC.ctx.sampleRate, len = Math.floor(sr * 1.1);
+      var ir = MUSIC.ctx.createBuffer(2, len, sr), ch, j, dec;
+      for (ch = 0; ch < 2; ch++){
+        var dat = ir.getChannelData(ch);
+        for (j = 0; j < len; j++){
+          dec = Math.pow(1 - j / len, 2.6);
+          dat[j] = (Math.random() * 2 - 1) * dec;
+        }
+      }
+      MUSIC.verb = MUSIC.ctx.createConvolver();
+      MUSIC.verb.buffer = ir;
+      MUSIC.send = MUSIC.ctx.createGain();
+      MUSIC.send.gain.value = 0.30;
+      MUSIC.sfx.connect(MUSIC.send);
+      MUSIC.send.connect(MUSIC.verb);
+      MUSIC.verb.connect(comp);
+    } catch(e){ MUSIC.verb = null; }
     comp.connect(MUSIC.ctx.destination);
     /* a little noise buffer for the hats */
     var n = MUSIC.ctx.sampleRate * 0.2, buf = MUSIC.ctx.createBuffer(1, n, MUSIC.ctx.sampleRate);
@@ -3096,6 +3149,38 @@ function fxAdd(el, ms){
   host.appendChild(el);
   setTimeout(function(){ try { el.remove(); } catch(e){} }, ms);
 }
+/* Drawn rather than typed: an emoji renders differently on every machine and
+   cannot carry a trail. */
+var SVG_PLANE =
+  '<svg class="g" width="74" height="30" viewBox="0 0 74 30" fill="none">' +
+  '<path d="M2 17l12-3 9 1 6-9h6l-2 10 16-2 8-10h6l-4 12 13 1c2 0 2 3 0 3l-13 1 4 12h-6l-8-10-16-2 2 10h-6l-6-9-9 1-12-3z" ' +
+  'fill="#f3f7fb" stroke="rgba(0,0,0,.18)"/>' +
+  '<circle cx="24" cy="15" r="1.6" fill="#8fb8d8"/><circle cx="31" cy="15" r="1.6" fill="#8fb8d8"/></svg>';
+var SVG_ROCKET =
+  '<svg class="g" width="34" height="76" viewBox="0 0 34 76" fill="none">' +
+  '<path d="M17 2c7 8 11 19 11 30v20H6V32C6 21 10 10 17 2z" fill="#f6f8fb" stroke="rgba(0,0,0,.18)"/>' +
+  '<path d="M6 40L1 58l5-4zM28 40l5 18-5-4z" fill="#e2564a"/>' +
+  '<circle cx="17" cy="26" r="5.5" fill="#79b6e8" stroke="rgba(0,0,0,.15)"/>' +
+  '<path d="M11 52h12l-6 22z" fill="#ffb24a" opacity=".95"/></svg>';
+
+/* where the cards just landed, so effects come from the play itself */
+function fxOrigin(){
+  var host = $("#fx"), board = document.querySelector("#board .cards") || $("#board");
+  if (!host || !board) return {x:0.5, y:0.5, px:0, py:0};
+  var h = host.getBoundingClientRect(), b = board.getBoundingClientRect();
+  if (!b.width) return {x:0.5, y:0.5, px:h.width/2, py:h.height/2};
+  var px = (b.left - h.left) + b.width/2, py = (b.top - h.top) + b.height/2;
+  return {x:px/(h.width||1), y:py/(h.height||1), px:px, py:py};
+}
+/* make the played cards answer their own flourish */
+function fxCardPulse(){
+  var c = document.querySelector("#board .cards");
+  if (!c) return;
+  c.classList.remove("fxpulse");
+  void c.offsetWidth;
+  c.classList.add("fxpulse");
+  setTimeout(function(){ c.classList.remove("fxpulse"); }, 600);
+}
 function fxShake(){
   var t = $("#table");
   if (!t) return;
@@ -3104,50 +3189,126 @@ function fxShake(){
   t.classList.add("shaking");
   setTimeout(function(){ t.classList.remove("shaking"); }, 520);
 }
-function fxSparks(n, cls){
-  var i, e, a, d;
+function fxSparks(n, cls, at){
+  var o = at || fxOrigin(), i, e, a, d;
   for (i = 0; i < n; i++){
     e = document.createElement("div");
     e.className = "fxspark" + (cls ? " " + cls : "");
     a = Math.random() * Math.PI * 2;
     d = 70 + Math.random() * 130;
-    e.style.left = "50%"; e.style.top = "50%";
+    e.style.left = o.px + "px"; e.style.top = o.py + "px";
     e.style.setProperty("--dx", Math.cos(a) * d + "px");
     e.style.setProperty("--dy", Math.sin(a) * d + "px");
     e.style.animationDelay = (Math.random() * 0.12) + "s";
     fxAdd(e, 900);
   }
 }
+/* thrown outward, then pulled down — reads as debris rather than fireworks */
+function fxDebris(n, at){
+  var o = at || fxOrigin(), i, e, a, d;
+  for (i = 0; i < n; i++){
+    e = document.createElement("div");
+    e.className = "fxbit" + (Math.random() < 0.4 ? " hot" : "") + (Math.random() < 0.35 ? " round" : "");
+    a = -Math.PI/2 + (Math.random() - 0.5) * 2.4;      /* mostly upward */
+    d = 90 + Math.random() * 170;
+    e.style.left = o.px + "px"; e.style.top = o.py + "px";
+    e.style.setProperty("--dx", Math.cos(a) * d + "px");
+    e.style.setProperty("--dy", (Math.sin(a) * d + 150) + "px");   /* gravity */
+    e.style.setProperty("--rot", (Math.random() * 720 - 360) + "deg");
+    e.style.animationDelay = (Math.random() * 0.08) + "s";
+    e.style.animationDuration = (0.8 + Math.random() * 0.5) + "s";
+    fxAdd(e, 1500);
+  }
+}
+function fxFlash(at){
+  var o = at || fxOrigin(), e = document.createElement("div");
+  e.className = "fxflash";
+  e.style.setProperty("--fx", (o.x * 100) + "%");
+  e.style.setProperty("--fy", (o.y * 100) + "%");
+  fxAdd(e, 520);
+}
 /* an airplane crosses the table, direction depending on who played it */
 function fxPlane(fromRight){
+  var top = 22 + Math.random() * 18;
   var e = document.createElement("div");
   e.className = "fxflyer" + (fromRight ? " rev" : "");
-  e.innerHTML = '<span class="g">✈️</span>';
-  e.style.top = (24 + Math.random() * 20) + "%";
+  e.innerHTML = SVG_PLANE;
+  e.style.top = top + "%";
   e.style.animation = (fromRight ? "flyback" : "flyacross") + " 1.6s linear both";
   fxAdd(e, 1800);
+  var tr = document.createElement("div");       /* vapour laid down behind it */
+  tr.className = "fxtrail" + (fromRight ? " rev" : "");
+  tr.style.top = "calc(" + top + "% + 13px)";
+  if (fromRight) tr.style.right = "0"; else tr.style.left = "0";
+  fxAdd(tr, 1800);
 }
 /* the rocket leaves the table altogether */
 function fxRocketFly(){
+  var o = fxOrigin(), i;
   var e = document.createElement("div");
   e.className = "fxflyer";
-  e.innerHTML = '<span class="g">🚀</span>';
-  e.style.paddingLeft = "38%";
-  e.style.top = "62%";
+  e.innerHTML = SVG_ROCKET;
+  e.style.paddingLeft = Math.max(0, o.px - 17) + "px";
+  e.style.top = Math.max(0, o.py - 30) + "px";
   e.style.animation = "launch 1.25s cubic-bezier(.3,0,.5,1) both";
   fxAdd(e, 1400);
-  setTimeout(function(){ fxSparks(14); }, 120);
+  for (i = 0; i < 7; i++){                       /* smoke left along the way up */
+    (function(n){
+      setTimeout(function(){
+        var p = document.createElement("div");
+        p.className = "fxbit round";
+        p.style.left = (o.px - 4 + (Math.random() * 18 - 9)) + "px";
+        p.style.top  = (o.py - n * 26) + "px";
+        p.style.background = "rgba(255,255,255,.5)";
+        p.style.setProperty("--dx", (Math.random() * 44 - 22) + "px");
+        p.style.setProperty("--dy", "34px");
+        p.style.setProperty("--rot", "0deg");
+        p.style.animationDuration = "0.9s";
+        fxAdd(p, 1100);
+      }, 70 * n);
+    })(i);
+  }
+  fxFlash(o);
+  setTimeout(function(){ fxSparks(16, null, o); }, 110);
 }
 function fxBlast(red){
-  var r = document.createElement("div");
-  r.className = "fxring" + (red ? " red" : "");
-  fxAdd(r, 900);
-  var r2 = document.createElement("div");
-  r2.className = "fxring" + (red ? " red" : "");
-  r2.style.animationDelay = "0.12s";
-  fxAdd(r2, 1000);
-  fxSparks(16);
+  var o = fxOrigin(), i, r;
+  fxFlash(o);
+  for (i = 0; i < 2; i++){
+    r = document.createElement("div");
+    r.className = "fxring" + (red ? " red" : "");
+    r.style.left = o.px + "px"; r.style.top = o.py + "px";
+    r.style.animationDelay = (i * 0.12) + "s";
+    fxAdd(r, 1000);
+  }
+  fxDebris(red ? 20 : 12, o);
+  fxSparks(red ? 14 : 10, null, o);
   fxShake();
+}
+/* winning a hand deserves more than a dialog */
+function fxConfetti(){
+  var host = $("#fx"); if (!host) return;
+  var w = host.getBoundingClientRect().width || 600, i, e;
+  var colours = ["#ffd98a","#ff9a6a","#7ee0a0","#79b6e8","#e8a0e0","#fff2c8"];
+  for (i = 0; i < 46; i++){
+    e = document.createElement("div");
+    e.className = "fxbit" + (Math.random() < 0.3 ? " round" : "");
+    e.style.background = colours[i % colours.length];
+    e.style.left = (Math.random() * w) + "px";
+    e.style.top = "-14px";
+    e.style.setProperty("--dx", (Math.random() * 160 - 80) + "px");
+    e.style.setProperty("--dy", (260 + Math.random() * 260) + "px");
+    e.style.setProperty("--rot", (Math.random() * 900 - 450) + "deg");
+    e.style.animationDuration = (1.1 + Math.random() * 0.9) + "s";
+    e.style.animationDelay = (Math.random() * 0.5) + "s";
+    fxAdd(e, 2600);
+  }
+}
+function sfxFanfare(){
+  if (!sfxReady()) return;
+  var at = MUSIC.ctx.currentTime + 0.001, n = [523, 659, 784, 1047], i;
+  for (i = 0; i < n.length; i++)
+    tone(at + i * 0.1, n[i], n[i], i === 3 ? 0.5 : 0.2, "triangle", 0.09);
 }
 function fxSweep(){
   var e = document.createElement("div");
@@ -3157,6 +3318,7 @@ function fxSweep(){
 /* one entry point: given what was played, make some noise and show something */
 function flourish(cb, cards, byMe, fromRight){
   var t = cb.type;
+  if (fxOn() && t !== "single" && t !== "pair" && t !== "triple") fxCardPulse();
   if (t === "rocket"){
     sfxRocket(); if (fxOn()){ fxRocketFly(); fxBlast(false); }
     return;
@@ -3166,7 +3328,7 @@ function flourish(cb, cards, byMe, fromRight){
     return;
   }
   if (t === "tripseq" || t === "plane1" || t === "plane2"){
-    sfxPlane(); if (fxOn()) fxPlane(fromRight);
+    sfxPlane(fromRight); if (fxOn()) fxPlane(fromRight);
     return;
   }
   if (t === "quad1" || t === "quad2"){
@@ -3260,14 +3422,23 @@ function sfxChain(len){
   }
 }
 /* an airplane: engines going past, pitch bending down as it passes */
-function sfxPlane(){
+function sfxPlane(fromRight){
   if (!sfxReady()) return;
-  var at = MUSIC.ctx.currentTime + 0.001;
-  noiseBurst(at, 1.15, 0.085, "bandpass", 500, 260);
-  tone(at,        150, 230, 0.55, "sawtooth", 0.075);   /* coming towards you */
-  tone(at + 0.55, 230, 120, 0.60, "sawtooth", 0.075);   /* and away again */
-  tone(at + 0.05, 303, 462, 0.52, "sawtooth", 0.035);
-  tone(at + 0.57, 462, 243, 0.58, "sawtooth", 0.035);
+  var c = MUSIC.ctx, at = c.currentTime + 0.001, dest = MUSIC.sfx, pan = null;
+  try {
+    if (c.createStereoPanner){
+      pan = c.createStereoPanner();
+      pan.pan.setValueAtTime(fromRight ? 1 : -1, at);
+      pan.pan.linearRampToValueAtTime(fromRight ? -1 : 1, at + 1.15);  /* it flies past */
+      pan.connect(MUSIC.sfx);
+      dest = pan;
+    }
+  } catch(e){ dest = MUSIC.sfx; }
+  noiseBurst(at, 1.15, 0.085, "bandpass", 500, 260, dest);
+  tone(at,        150, 230, 0.55, "sawtooth", 0.075, dest);   /* coming towards you */
+  tone(at + 0.55, 230, 120, 0.60, "sawtooth", 0.075, dest);   /* and away again */
+  tone(at + 0.05, 303, 462, 0.52, "sawtooth", 0.035, dest);
+  tone(at + 0.57, 462, 243, 0.58, "sawtooth", 0.035, dest);
 }
 /* four of a kind with cargo: a heavy landing */
 function sfxSlam(){
@@ -3288,9 +3459,11 @@ function sfxPass(dest){
 function sfxBomb(dest){
   if (!dest && !sfxReady()) return;
   var at = (dest ? 0 : MUSIC.ctx.currentTime) + 0.001;
-  noiseBurst(at, 0.42, 0.22, "lowpass", 3200, 180, dest);
-  tone(at, 180, 42, 0.40, "sine", 0.28, dest);
-  tone(at, 90, 30, 0.30, "square", 0.10, dest);
+  noiseBurst(at, 0.055, 0.26, "highpass", 2600, 3800, dest);   /* the crack */
+  noiseBurst(at, 0.52, 0.22, "lowpass", 3200, 140, dest);      /* the body */
+  tone(at, 180, 36, 0.48, "sine", 0.30, dest);                 /* and the drop */
+  tone(at, 90, 28, 0.34, "square", 0.10, dest);
+  tone(at + 0.02, 300, 60, 0.26, "triangle", 0.07, dest);
 }
 /* the rocket outranks everything, so it gets a launch: a rising whoosh into a burst */
 function sfxRocket(dest){
