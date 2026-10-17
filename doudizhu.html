@@ -207,6 +207,60 @@ button.ghost{font-size:12px;padding:5px 11px}
 .tally .me{color:var(--gold)}
 kbd{background:rgba(255,255,255,.12);border-radius:4px;padding:1px 5px;font-size:11px}
 
+/* ---------- play flourishes ---------- */
+#fx{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:20}
+/* Full width of the table, so a percentage translate is a share of the TABLE and
+   the whole flight stays inside the layer instead of being clipped away. */
+.fxflyer{position:absolute;left:0;width:100%;font-size:46px;line-height:1;will-change:transform,opacity}
+.fxflyer .g{display:inline-block}
+.fxflyer.rev .g{transform:scaleX(-1)}
+@keyframes flyacross{
+  0%{transform:translate(-16%,0) rotate(-6deg) scale(.82);opacity:0}
+  14%{opacity:1} 86%{opacity:1}
+  100%{transform:translate(104%,-30px) rotate(-6deg) scale(1.06);opacity:0}
+}
+@keyframes flyback{
+  0%{transform:translate(104%,0) rotate(6deg) scale(.82);opacity:0}
+  14%{opacity:1} 86%{opacity:1}
+  100%{transform:translate(-16%,-30px) rotate(6deg) scale(1.06);opacity:0}
+}
+@keyframes launch{
+  0%{transform:translate(0,40px) rotate(-12deg) scale(.7);opacity:0}
+  15%{opacity:1}
+  100%{transform:translate(55%,-150%) rotate(26deg) scale(1.3);opacity:0}
+}
+@keyframes shock{
+  0%{transform:scale(.25);opacity:.85;border-width:14px}
+  100%{transform:scale(3.1);opacity:0;border-width:1px}
+}
+.fxring{
+  position:absolute;left:50%;top:50%;width:170px;height:170px;margin:-85px 0 0 -85px;
+  border-radius:50%;border:12px solid rgba(255,196,106,.9);animation:shock .72s ease-out both
+}
+.fxring.red{border-color:rgba(255,120,90,.92)}
+@keyframes sweep{
+  0%{transform:translateX(-130%) skewX(-18deg);opacity:0}
+  25%{opacity:.9}
+  100%{transform:translateX(130%) skewX(-18deg);opacity:0}
+}
+.fxsweep{
+  position:absolute;left:0;top:26%;width:55%;height:130px;filter:blur(2px);
+  background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,236,190,.42),rgba(255,255,255,0));
+  animation:sweep .85s cubic-bezier(.3,0,.2,1) both
+}
+@keyframes shakeit{
+  0%,100%{transform:translate(0,0)}
+  15%{transform:translate(-7px,3px)}  30%{transform:translate(6px,-4px)}
+  45%{transform:translate(-5px,-2px)} 60%{transform:translate(4px,3px)}
+  80%{transform:translate(-2px,1px)}
+}
+.shaking{animation:shakeit .5s ease-in-out both}
+@keyframes sparkpop{
+  0%{transform:translate(0,0) scale(.45);opacity:1}
+  100%{transform:translate(var(--dx),var(--dy)) scale(0);opacity:0}
+}
+.fxspark{position:absolute;width:9px;height:9px;border-radius:50%;background:#ffd98a;animation:sparkpop .62s ease-out both}
+
 /* ---------- achievements ---------- */
 #toasts{
   position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:60;
@@ -353,6 +407,7 @@ button.mode .md{font-size:11.5px;color:#c3dccd;line-height:1.5;font-weight:400}
   <div id="combolabel"></div>
   <div id="controls"></div>
 
+  <div id="fx"></div>
   <div id="toasts"></div>
 
   <div class="overlay" id="home">
@@ -422,6 +477,7 @@ en:{
   c_triple2:"Triple + pair", c_straight:"Straight", c_pairseq:"Pair sequence",
   c_tripseq:"Airplane", c_plane1:"Airplane + singles", c_plane2:"Airplane + pairs",
   c_bomb:"💣 Bomb", c_rocket:"🚀 Rocket", c_quad1:"Quad + 2 singles", c_quad2:"Quad + 2 pairs",
+  setAnim:"Animations",
   setSfx:"Sound effects",
   setMusic:"Music", musicOn:"On", musicOff:"Off",
   homeKeys:"Keys: 1 bots · 2 friends · A achievements · S settings",
@@ -516,6 +572,7 @@ zh:{
   c_triple2:"三带一对", c_straight:"顺子", c_pairseq:"连对",
   c_tripseq:"飞机", c_plane1:"飞机带单张", c_plane2:"飞机带对子",
   c_bomb:"💣 炸弹", c_rocket:"🚀 王炸", c_quad1:"四带二", c_quad2:"四带两对",
+  setAnim:"动画",
   setSfx:"音效",
   setMusic:"音乐", musicOn:"开", musicOff:"关",
   homeKeys:"快捷键：1 电脑 · 2 朋友 · A 成就 · S 设置",
@@ -629,6 +686,7 @@ es:{
   c_triple2:"Trío + pareja", c_straight:"Escalera", c_pairseq:"Escalera de parejas",
   c_tripseq:"Avión", c_plane1:"Avión + sueltas", c_plane2:"Avión + parejas",
   c_bomb:"💣 Bomba", c_rocket:"🚀 Cohete", c_quad1:"Cuarteto + 2 sueltas", c_quad2:"Cuarteto + 2 parejas",
+  setAnim:"Animaciones",
   setSfx:"Efectos de sonido",
   setMusic:"Música", musicOn:"Sí", musicOff:"No",
   homeKeys:"Teclas: 1 bots · 2 amigos · A logros · S ajustes",
@@ -723,6 +781,7 @@ zhT:{
   c_triple2:"三帶一對", c_straight:"順子", c_pairseq:"連對",
   c_tripseq:"飛機", c_plane1:"飛機帶單張", c_plane2:"飛機帶對子",
   c_bomb:"💣 炸彈", c_rocket:"🚀 王炸", c_quad1:"四帶二", c_quad2:"四帶兩對",
+  setAnim:"動畫",
   setSfx:"音效",
   setMusic:"音樂", musicOn:"開", musicOff:"關",
   homeKeys:"快捷鍵：1 電腦 · 2 朋友 · A 成就 · S 設定",
@@ -834,7 +893,13 @@ var FELTS = {
   purple:   ["#543b7a","#3f2c5e","#2b1d42","#1d142e"]
 };
 var CARD_SIZES = {s:[56,80,-26], m:[64,92,-30], l:[78,112,-38]};
-var PREFS = {diff:"normal", cardSize:"m", felt:"green", music:true, sfx:true};
+var PREFS = {diff:"normal", cardSize:"m", felt:"green", music:true, sfx:true, anim:true};
+try {
+  /* somebody who asks their system for less motion should not be ambushed by a
+     rocket flying across the table */
+  if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches)
+    PREFS.anim = false;
+} catch(e){}
 try {
   var savedPrefs = JSON.parse(localStorage.getItem("ddz-prefs") || "null");
   if (savedPrefs){
@@ -843,6 +908,7 @@ try {
     if (FELTS[savedPrefs.felt]) PREFS.felt = savedPrefs.felt;
     if (typeof savedPrefs.music === "boolean") PREFS.music = savedPrefs.music;
     if (typeof savedPrefs.sfx === "boolean") PREFS.sfx = savedPrefs.sfx;
+    if (typeof savedPrefs.anim === "boolean") PREFS.anim = savedPrefs.anim;
   }
 } catch(e){}
 function DIFFOK(d){ return d === "easy" || d === "normal" || d === "hard" || d === "impossible"; }
@@ -1184,6 +1250,9 @@ function renderBoard(){
   boardSig = sig;
   b.innerHTML = "";
   if (!G.last) return;
+  /* a genuinely new play — not a redraw — so give it its moment */
+  if (sig) flourish(G.last.combo, G.last.cards, G.last.player === G.me,
+                    slotOf(G.last.player) === 1);
   var who = document.createElement("div");
   who.className = "who";
   who.textContent = (G.last.player === G.me ? t("playedYou") : t("playedX", pname(G.last.player)));
@@ -1227,13 +1296,16 @@ function fitHand(){
   }
   h.style.setProperty("--hand-ov", (vis - cw) + "px");
 }
-var handSig = null;
+var handSig = null, handLen = 0;
 function renderHand(){
   var h = $("#hand");
   h.classList.toggle("locked", G.phase !== "play" || G.turn !== G.me);
   var cards = G.hands[G.me] || [];
   var sig = cards.map(function(c){ return c ? c.id : "?"; }).join(",");
   if (sig !== handSig){
+    /* a whole hand arriving, rather than cards leaving one play at a time */
+    if (cards.length >= 17 && handLen < 17) sfxDeal(7);
+    handLen = cards.length;
     handSig = sig;
     h.innerHTML = "";
     cards.forEach(function(c){
@@ -1366,7 +1438,9 @@ function selectedCards(){
 }
 function toggleCard(id){
   if (G.phase !== "play" || G.turn !== G.me) return;
+  var picking = !G.sel.has(id);
   if (G.sel.has(id)) G.sel.delete(id); else G.sel.add(id);
+  sfxSelect(picking);
   G.hintList = null;
   render();
 }
@@ -1843,9 +1917,6 @@ function playCards(p, cards){
   G.plays[p]++;
   G.display[p] = cards.slice();
   if (p === G.me) achOnPlay(cb, cards);
-  if (cb.type === "rocket") sfxRocket();
-  else if (cb.type === "bomb") sfxBomb();
-  else sfxCard(cards.length);
   if (cb.type === "bomb" || cb.type === "rocket"){
     G.bombs++;
     G.multiplier *= 2;
@@ -2856,6 +2927,8 @@ function showSettings(){
            PREFS.music ? "on" : "off", "seg music") +
     segRow(t("setSfx"), [{v:"on",t:t("musicOn")},{v:"off",t:t("musicOff")}],
            PREFS.sfx ? "on" : "off", "seg sfx") +
+    segRow(t("setAnim"), [{v:"on",t:t("musicOn")},{v:"off",t:t("musicOff")}],
+           PREFS.anim ? "on" : "off", "seg anim") +
     swatches +
     '<div class="row"><button class="gold" id="setdone">' + t("done") + "</button></div>",
     function(){
@@ -2893,6 +2966,10 @@ function showSettings(){
       wire(".sfx", function(v){
         PREFS.sfx = (v === "on");
         if (PREFS.sfx) sfxCard(1);        /* let you hear what you just switched on */
+      });
+      wire(".anim", function(v){
+        PREFS.anim = (v === "on");
+        if (PREFS.anim) fxSweep();        /* and see it too */
       });
       [].forEach.call(document.querySelectorAll("#modal .swatch"), function(b){
         b.addEventListener("click", function(){
@@ -3007,6 +3084,106 @@ function hat(at, peak){
   src.connect(f); f.connect(g); g.connect(MUSIC.master);
   src.start(at); src.stop(at + 0.06);
 }
+/* ======================= play flourishes =======================
+   A combination worth noticing gets something to look at. These are purely
+   decorative, run over the table without taking clicks, and clean themselves up.
+   They are driven from the board, so everyone at a table sees the same thing
+   whoever played it. */
+function fxOn(){ return PREFS.anim !== false; }
+function fxAdd(el, ms){
+  var host = $("#fx");
+  if (!host) return;
+  host.appendChild(el);
+  setTimeout(function(){ try { el.remove(); } catch(e){} }, ms);
+}
+function fxShake(){
+  var t = $("#table");
+  if (!t) return;
+  t.classList.remove("shaking");
+  void t.offsetWidth;                       /* restart the animation */
+  t.classList.add("shaking");
+  setTimeout(function(){ t.classList.remove("shaking"); }, 520);
+}
+function fxSparks(n, cls){
+  var i, e, a, d;
+  for (i = 0; i < n; i++){
+    e = document.createElement("div");
+    e.className = "fxspark" + (cls ? " " + cls : "");
+    a = Math.random() * Math.PI * 2;
+    d = 70 + Math.random() * 130;
+    e.style.left = "50%"; e.style.top = "50%";
+    e.style.setProperty("--dx", Math.cos(a) * d + "px");
+    e.style.setProperty("--dy", Math.sin(a) * d + "px");
+    e.style.animationDelay = (Math.random() * 0.12) + "s";
+    fxAdd(e, 900);
+  }
+}
+/* an airplane crosses the table, direction depending on who played it */
+function fxPlane(fromRight){
+  var e = document.createElement("div");
+  e.className = "fxflyer" + (fromRight ? " rev" : "");
+  e.innerHTML = '<span class="g">✈️</span>';
+  e.style.top = (24 + Math.random() * 20) + "%";
+  e.style.animation = (fromRight ? "flyback" : "flyacross") + " 1.6s linear both";
+  fxAdd(e, 1800);
+}
+/* the rocket leaves the table altogether */
+function fxRocketFly(){
+  var e = document.createElement("div");
+  e.className = "fxflyer";
+  e.innerHTML = '<span class="g">🚀</span>';
+  e.style.paddingLeft = "38%";
+  e.style.top = "62%";
+  e.style.animation = "launch 1.25s cubic-bezier(.3,0,.5,1) both";
+  fxAdd(e, 1400);
+  setTimeout(function(){ fxSparks(14); }, 120);
+}
+function fxBlast(red){
+  var r = document.createElement("div");
+  r.className = "fxring" + (red ? " red" : "");
+  fxAdd(r, 900);
+  var r2 = document.createElement("div");
+  r2.className = "fxring" + (red ? " red" : "");
+  r2.style.animationDelay = "0.12s";
+  fxAdd(r2, 1000);
+  fxSparks(16);
+  fxShake();
+}
+function fxSweep(){
+  var e = document.createElement("div");
+  e.className = "fxsweep";
+  fxAdd(e, 1000);
+}
+/* one entry point: given what was played, make some noise and show something */
+function flourish(cb, cards, byMe, fromRight){
+  var t = cb.type;
+  if (t === "rocket"){
+    sfxRocket(); if (fxOn()){ fxRocketFly(); fxBlast(false); }
+    return;
+  }
+  if (t === "bomb"){
+    sfxBomb(); if (fxOn()) fxBlast(true);
+    return;
+  }
+  if (t === "tripseq" || t === "plane1" || t === "plane2"){
+    sfxPlane(); if (fxOn()) fxPlane(fromRight);
+    return;
+  }
+  if (t === "quad1" || t === "quad2"){
+    sfxSlam(); if (fxOn()){ fxBlast(false); }
+    return;
+  }
+  if (t === "straight"){
+    sfxRun(cb.len); if (fxOn()) fxSweep();
+    return;
+  }
+  if (t === "pairseq"){
+    sfxChain(cb.len); if (fxOn()) fxSweep();
+    return;
+  }
+  sfxCard(cards.length);
+}
+
 /* ---------------- sound effects ----------------
    Short, synthesised the same way as the music, on their own bus so turning the
    music off does not silence them. */
@@ -3047,6 +3224,58 @@ function sfxCard(n, dest){
   var big = Math.min(n || 1, 8);
   tone(at + 0.01, 660 + big * 25, 880 + big * 30, 0.11, "triangle", 0.10, dest);
   if (big >= 3) tone(at + 0.05, 990, 1180, 0.10, "triangle", 0.07, dest);
+}
+/* cards arriving: a quick riffle of flicks climbing in pitch */
+function sfxDeal(n){
+  if (!sfxReady()) return;
+  var at = MUSIC.ctx.currentTime + 0.01, i, k = Math.min(n || 6, 7);
+  for (i = 0; i < k; i++){
+    noiseBurst(at + i * 0.055, 0.05, 0.035, "bandpass", 1800 + i * 240, 900 + i * 140);
+    tone(at + i * 0.055, 420 + i * 46, 520 + i * 52, 0.06, "triangle", 0.05);
+  }
+}
+/* picking a card up and putting it back */
+function sfxSelect(on){
+  if (!sfxReady()) return;
+  var at = MUSIC.ctx.currentTime + 0.001;
+  tone(at, on ? 880 : 620, on ? 1040 : 520, 0.05, "sine", 0.045);
+}
+/* a straight: a run up the scale, one note per card */
+function sfxRun(len){
+  if (!sfxReady()) return;
+  var at = MUSIC.ctx.currentTime + 0.001, steps = [0,2,4,7,9,12,14,16,19,21,24,26], i;
+  for (i = 0; i < Math.min(len, steps.length); i++){
+    tone(at + i * 0.062, 392 * Math.pow(2, steps[i]/12), 392 * Math.pow(2, steps[i]/12),
+         0.16, "triangle", 0.075);
+  }
+}
+/* consecutive pairs: the same run, but in twos */
+function sfxChain(len){
+  if (!sfxReady()) return;
+  var at = MUSIC.ctx.currentTime + 0.001, i, f;
+  for (i = 0; i < Math.min(len, 8); i++){
+    f = 349 * Math.pow(2, (i * 2) / 12);
+    tone(at + i * 0.09,        f, f, 0.12, "triangle", 0.07);
+    tone(at + i * 0.09 + 0.035, f * 1.26, f * 1.26, 0.12, "triangle", 0.055);
+  }
+}
+/* an airplane: engines going past, pitch bending down as it passes */
+function sfxPlane(){
+  if (!sfxReady()) return;
+  var at = MUSIC.ctx.currentTime + 0.001;
+  noiseBurst(at, 1.15, 0.085, "bandpass", 500, 260);
+  tone(at,        150, 230, 0.55, "sawtooth", 0.075);   /* coming towards you */
+  tone(at + 0.55, 230, 120, 0.60, "sawtooth", 0.075);   /* and away again */
+  tone(at + 0.05, 303, 462, 0.52, "sawtooth", 0.035);
+  tone(at + 0.57, 462, 243, 0.58, "sawtooth", 0.035);
+}
+/* four of a kind with cargo: a heavy landing */
+function sfxSlam(){
+  if (!sfxReady()) return;
+  var at = MUSIC.ctx.currentTime + 0.001;
+  noiseBurst(at, 0.26, 0.14, "lowpass", 2200, 240);
+  tone(at, 220, 70, 0.28, "square", 0.14);
+  tone(at + 0.04, 660, 440, 0.30, "triangle", 0.06);
 }
 /* passing: a soft two-note shrug downwards */
 function sfxPass(dest){
